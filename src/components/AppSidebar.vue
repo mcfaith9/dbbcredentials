@@ -33,7 +33,7 @@ const emit = defineEmits<{
   (e: 'open-generator'): void
 }>()
 
-const { user, lock } = useAuth()
+const { user } = useAuth()
 const {
   counts,
   selectedFilter,
@@ -381,7 +381,7 @@ function handleNavClick(filter: VaultNavFilter) {
         >
           <div class="flex items-center gap-2.5">
             <UserRoundCheck class="w-4 h-4 text-blue-400" />
-            <span>Identities</span>
+            <span>Employees</span>
           </div>
           <span class="px-1.5 py-0.5 rounded-md text-[10px] bg-sidebar-border/60 text-muted-foreground font-mono">
             {{ counts.identities }}

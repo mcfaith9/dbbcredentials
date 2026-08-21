@@ -45,6 +45,11 @@ export default defineConfig(({ mode }) => {
                   build: {
                     outDir: 'dist-electron',
                     minify: false,
+                    rollupOptions: {
+                      output: {
+                        format: 'es',
+                      },
+                    },
                   },
                 },
               },

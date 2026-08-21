@@ -216,8 +216,24 @@ export function useVault() {
           item.content,
           item.full_name,
           item.position,
+          item.department,
+          item.contract,
+          item.status,
+          item.sss_no,
+          item.hdmf_no,
+          item.pagibig_no,
+          item.phic_no,
+          item.philhealth_no,
+          item.tin_no,
+          item.birthdate,
+          item.address,
+          item.dmbb_id,
+          item.employee_id,
+          item.contact_no,
+          item.emergency_contact,
           item.work_email,
           item.work_phone,
+          item.phone,
           item.office_address,
           item.category,
           item.notes,
@@ -401,11 +417,36 @@ export function useVault() {
   })
 
   // Item Actions
-  function saveItem(item: Partial<VaultItem> & { name: string; type: VaultItemType }) {
+  function saveItem(item: Partial<VaultItem> & { type: VaultItemType; name?: string }) {
     const saved = LocalStorageService.upsertItem(item)
     loadVault()
     selectedItemId.value = saved.id
     return saved
+  }
+
+  function bulkUpsertItems(itemsToUpsert: VaultItem[]) {
+    const allItems = LocalStorageService.getItems()
+    const now = new Date().toISOString()
+
+    itemsToUpsert.forEach((incoming) => {
+      const existingIdx = allItems.findIndex((i) => i.id === incoming.id)
+      if (existingIdx !== -1) {
+        allItems[existingIdx] = {
+          ...allItems[existingIdx],
+          ...incoming,
+          updated_at: now,
+        }
+      } else {
+        allItems.unshift({
+          ...incoming,
+          created_at: incoming.created_at || now,
+          updated_at: now,
+        })
+      }
+    })
+
+    LocalStorageService.saveItems(allItems)
+    loadVault()
   }
 
   function moveToTrash(id: string) {
@@ -578,6 +619,7 @@ export function useVault() {
     isLoaded,
     loadVault,
     saveItem,
+    bulkUpsertItems,
     moveToTrash,
     restoreFromTrash,
     permanentlyDelete,

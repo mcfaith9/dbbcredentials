@@ -6,6 +6,8 @@ import { useToast } from '@/composables/useToast'
 import { calculatePasswordStrength } from '@/services/crypto'
 import PasswordGeneratorModal from './PasswordGeneratorModal.vue'
 import CredentialTypeIcon from './CredentialTypeIcon.vue'
+import PhoneInput from '@/components/common/PhoneInput.vue'
+import AddressInput from '@/components/common/AddressInput.vue'
 import {
   Building2,
   Eye,
@@ -84,6 +86,7 @@ const defaultFormData = () => ({
   provider: '',
   login_url: '',
   recovery_email: '',
+  recovery_phone: '',
   imap_server: '',
   smtp_server: '',
   // Social Account
@@ -130,12 +133,25 @@ const defaultFormData = () => ({
   seat_count: undefined as number | undefined,
   // Secure Note
   content: '',
-  // Identity
+  // Identity / Employee Profile
   full_name: '',
   position: '',
-  work_email: '',
-  work_phone: '',
+  department: '',
+  contract: 'Regular',
+  status: 'Active',
+  sss_no: '',
+  hdmf_no: '',
+  phic_no: '',
+  tin_no: '',
+  birthdate: '',
+  address: '',
   office_address: '',
+  dmbb_id: '',
+  employee_id: '',
+  contact_no: '',
+  work_phone: '',
+  emergency_contact: '',
+  work_email: '',
 })
 
 const form = reactive(defaultFormData())
@@ -192,16 +208,115 @@ function applyGeneratedPassword(pwd: string) {
   showPassword.value = true
 }
 
+function computeDerivedName(): string {
+  if (form.name && form.name.trim()) return form.name.trim()
+
+  switch (form.type) {
+    case 'email_account':
+      return form.email ? form.email.trim() : (form.provider ? `${form.provider} Account` : '')
+    case 'pc_computer':
+      return form.hostname ? form.hostname.trim() : (form.operating_system ? `${form.operating_system} PC` : '')
+    case 'domain':
+      return form.domain_name ? form.domain_name.trim() : ''
+    case 'wifi':
+      return form.ssid ? form.ssid.trim() : ''
+    case 'software_license':
+      return form.software_name ? form.software_name.trim() : ''
+    case 'social_account':
+      if (form.platform && form.platform.trim()) {
+        return form.username ? `${form.platform.trim()} (${form.username.trim()})` : form.platform.trim()
+      }
+      return form.username ? form.username.trim() : ''
+    case 'company_account':
+      if (form.provider && form.provider.trim()) {
+        return form.account_id ? `${form.provider.trim()} (${form.account_id.trim()})` : form.provider.trim()
+      }
+      return form.account_id ? form.account_id.trim() : ''
+    case 'server':
+      return form.hostname ? form.hostname.trim() : (form.server_url ? form.server_url.trim() : '')
+    case 'hosting':
+      return form.provider ? form.provider.trim() : (form.dashboard_url ? form.dashboard_url.trim() : '')
+    case 'identity':
+      return form.full_name ? form.full_name.trim() : (form.position ? form.position.trim() : '')
+    case 'note':
+      if (form.content && form.content.trim()) {
+        const firstLine = form.content.trim().split('\n')[0].replace(/^[#\s*-_]+/, '').trim()
+        if (firstLine) return firstLine.slice(0, 45)
+      }
+      return 'Secure Note'
+    case 'password':
+    default:
+      if (form.website_url && form.website_url.trim()) {
+        try {
+          const url = new URL(form.website_url.startsWith('http') ? form.website_url : `https://${form.website_url}`)
+          return url.hostname.replace(/^www\./, '')
+        } catch {
+          return form.website_url.trim()
+        }
+      }
+      return form.username ? form.username.trim() : (form.email ? form.email.trim() : '')
+  }
+}
+
 function handleSubmit() {
-  if (!form.name.trim()) {
-    error('Name required', 'Please give this credential item a descriptive name.')
+  const derived = computeDerivedName()
+
+  // Validate required primary identifier per credential type
+  if (form.type === 'email_account' && !form.email.trim()) {
+    error('Email Required', 'Please enter a valid email address.')
     return
   }
+  if (form.type === 'pc_computer' && !form.hostname.trim()) {
+    error('Computer Name Required', 'Please enter the computer name or hostname.')
+    return
+  }
+  if (form.type === 'domain' && !form.domain_name.trim()) {
+    error('Domain Required', 'Please enter the domain name (e.g. company.com).')
+    return
+  }
+  if (form.type === 'wifi' && !form.ssid.trim()) {
+    error('SSID Required', 'Please enter the Wi-Fi network SSID.')
+    return
+  }
+  if (form.type === 'software_license' && !form.software_name.trim()) {
+    error('Software Name Required', 'Please enter the software name.')
+    return
+  }
+  if (form.type === 'social_account' && !form.platform.trim() && !form.username.trim()) {
+    error('Platform Required', 'Please enter the social media platform or username.')
+    return
+  }
+  if (form.type === 'company_account' && !form.provider.trim()) {
+    error('Provider Required', 'Please enter the service or tool provider name.')
+    return
+  }
+  if (form.type === 'server' && !form.hostname.trim()) {
+    error('Server Name Required', 'Please enter the server hostname or IP address.')
+    return
+  }
+  if (form.type === 'hosting' && !form.provider.trim()) {
+    error('Hosting Provider Required', 'Please enter the hosting provider.')
+    return
+  }
+  if (form.type === 'identity' && !form.full_name.trim()) {
+    error('Full Name Required', 'Please enter the employee full name.')
+    return
+  }
+  if (form.type === 'password' && !derived) {
+    error('Account Name Required', 'Please provide an account name, website URL, or username.')
+    return
+  }
+  if (form.type === 'note' && !form.content.trim()) {
+    error('Content Required', 'Please enter your note content.')
+    return
+  }
+
+  const finalName = derived || 'Untitled Credential'
 
   try {
     const saved = saveItem({
       ...form,
-      name: form.name.trim(),
+      name: finalName,
     })
     success(
       props.itemToEdit ? 'Credential Updated' : 'Credential Saved',
@@ -235,9 +350,9 @@ function close() {
           </div>
           <div>
             <h3 class="text-base font-bold text-foreground">
-              {{ itemToEdit ? 'Edit Company Credential' : 'New Credential' }}
+              {{ itemToEdit ? 'Edit Credential' : 'New Credential' }}
             </h3>
-            <p class="text-xs text-muted-foreground">Company Credential Vault (Local Encrypted)</p>
+            <p class="text-xs text-muted-foreground">DBB Company Vault (Encrypted Storage)</p>
           </div>
         </div>
 
@@ -286,40 +401,29 @@ function close() {
 
       <!-- Form Body Scrollable -->
       <form @submit.prevent="handleSubmit" class="flex-1 overflow-y-auto p-6 space-y-5">
-        <!-- Section: Essential Identity -->
-        <div class="space-y-4">
-          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div class="sm:col-span-2 space-y-1.5">
-              <label class="text-xs font-semibold text-foreground flex items-center justify-between">
-                <span>Record Name *</span>
-                <span class="text-[11px] text-muted-foreground font-normal">e.g. AWS Production, Office Wi-Fi, HR Portal</span>
-              </label>
+        <!-- ================= 1. PASSWORD / LOGIN TYPE ================= -->
+        <div v-if="form.type === 'password'" class="space-y-4">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="space-y-1.5">
+              <label class="text-xs font-semibold text-foreground">Service / Account Name *</label>
               <input
                 v-model="form.name"
                 type="text"
-                required
-                placeholder="Descriptive name or title"
-                class="w-full px-3.5 py-2 text-sm rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition"
+                placeholder="e.g. AWS Production, Google Workspace, HR Portal"
+                class="w-full px-3.5 py-2 text-sm rounded-xl border border-input bg-card/60 hover:bg-card focus:bg-card focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition placeholder:text-muted-foreground"
               />
             </div>
-
             <div class="space-y-1.5">
-              <label class="text-xs font-semibold text-foreground">Credential Type</label>
-              <select
-                v-model="form.type"
-                class="w-full px-3.5 py-2 text-sm rounded-xl border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition"
-              >
-                <option v-for="t in credentialTypes" :key="t.type" :value="t.type">
-                  {{ t.label }}
-                </option>
-              </select>
+              <label class="text-xs font-semibold text-foreground">Website / Service URL</label>
+              <input
+                v-model="form.website_url"
+                type="url"
+                placeholder="https://console.aws.amazon.com"
+                class="w-full px-3.5 py-2 text-sm rounded-xl border border-input bg-card/60 hover:bg-card focus:bg-card focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition placeholder:text-muted-foreground"
+              />
             </div>
           </div>
-        </div>
 
-        <!-- ================= 1. PASSWORD / LOGIN TYPE ================= -->
-        <div v-if="form.type === 'password'" class="space-y-4 pt-2 border-t border-border">
-          <h4 class="text-xs font-bold text-muted-foreground uppercase tracking-wider">Login Credentials</h4>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div class="space-y-1.5">
               <label class="text-xs font-semibold text-foreground">Username / Account ID</label>
@@ -327,7 +431,7 @@ function close() {
                 v-model="form.username"
                 type="text"
                 placeholder="admin, dev_ops, jdoe"
-                class="w-full px-3.5 py-2 text-sm rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition"
+                class="w-full px-3.5 py-2 text-sm rounded-xl border border-input bg-card/60 hover:bg-card focus:bg-card focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition placeholder:text-muted-foreground"
               />
             </div>
             <div class="space-y-1.5">
@@ -335,8 +439,8 @@ function close() {
               <input
                 v-model="form.email"
                 type="email"
-                placeholder="devops@company.corp"
-                class="w-full px-3.5 py-2 text-sm rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition"
+                placeholder="name@company.com"
+                class="w-full px-3.5 py-2 text-sm rounded-xl border border-input bg-card/60 hover:bg-card focus:bg-card focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition placeholder:text-muted-foreground"
               />
             </div>
           </div>
@@ -358,8 +462,8 @@ function close() {
               <input
                 v-model="form.password"
                 :type="showPassword ? 'text' : 'password'"
-                placeholder="Password or Secret Key"
-                class="w-full pl-3.5 pr-20 py-2.5 text-sm font-mono rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition"
+                placeholder="Enter password or secret key"
+                class="w-full pl-3.5 pr-20 py-2.5 text-sm font-mono rounded-xl border border-input bg-card/60 hover:bg-card focus:bg-card focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition placeholder:text-muted-foreground"
               />
               <div class="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
                 <button
@@ -405,38 +509,28 @@ function close() {
               </div>
             </div>
           </div>
-
-          <div class="space-y-1.5">
-            <label class="text-xs font-semibold text-foreground">Website / Service URL</label>
-            <input
-              v-model="form.website_url"
-              type="url"
-              placeholder="https://console.aws.amazon.com"
-              class="w-full px-3.5 py-2 text-sm rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition"
-            />
-          </div>
         </div>
 
         <!-- ================= 2. EMAIL ACCOUNT ================= -->
-        <div v-else-if="form.type === 'email_account'" class="space-y-4 pt-2 border-t border-border">
-          <h4 class="text-xs font-bold text-muted-foreground uppercase tracking-wider">Email Account Configuration</h4>
+        <div v-else-if="form.type === 'email_account'" class="space-y-4">
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div class="space-y-1.5">
               <label class="text-xs font-semibold text-foreground">Email Address *</label>
               <input
                 v-model="form.email"
                 type="email"
-                placeholder="contact@company.corp"
-                class="w-full px-3.5 py-2 text-sm rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition"
+                required
+                placeholder="contact@company.com"
+                class="w-full px-3.5 py-2 text-sm rounded-xl border border-input bg-card/60 hover:bg-card focus:bg-card focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition placeholder:text-muted-foreground font-mono"
               />
             </div>
             <div class="space-y-1.5">
-              <label class="text-xs font-semibold text-foreground">Provider</label>
+              <label class="text-xs font-semibold text-foreground">Email Provider</label>
               <input
                 v-model="form.provider"
                 type="text"
                 placeholder="Google Workspace, Microsoft 365, Zoho"
-                class="w-full px-3.5 py-2 text-sm rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition"
+                class="w-full px-3.5 py-2 text-sm rounded-xl border border-input bg-card/60 hover:bg-card focus:bg-card focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition placeholder:text-muted-foreground"
               />
             </div>
           </div>
@@ -452,8 +546,8 @@ function close() {
               <input
                 v-model="form.password"
                 :type="showPassword ? 'text' : 'password'"
-                placeholder="App-specific password"
-                class="w-full px-3.5 py-2 text-sm font-mono rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition"
+                placeholder="App-specific or account password"
+                class="w-full px-3.5 py-2 text-sm font-mono rounded-xl border border-input bg-card/60 hover:bg-card focus:bg-card focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition placeholder:text-muted-foreground"
               />
             </div>
             <div class="space-y-1.5">
@@ -461,63 +555,73 @@ function close() {
               <input
                 v-model="form.recovery_email"
                 type="email"
-                placeholder="secops-recovery@company.corp"
-                class="w-full px-3.5 py-2 text-sm rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition"
+                placeholder="secops-recovery@company.com"
+                class="w-full px-3.5 py-2 text-sm rounded-xl border border-input bg-card/60 hover:bg-card focus:bg-card focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition placeholder:text-muted-foreground"
               />
             </div>
           </div>
 
-          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <!-- Recovery Phone with Philippines +63 default -->
+            <PhoneInput
+              v-model="form.recovery_phone"
+              label="Recovery Phone (Optional)"
+              placeholder="917 123 4567"
+              helper="Used for SMS multi-factor authentication & security recovery."
+            />
+
             <div class="space-y-1.5">
               <label class="text-xs font-semibold text-foreground">Webmail Login URL</label>
               <input
                 v-model="form.login_url"
                 type="url"
-                placeholder="https://mail.company.corp"
-                class="w-full px-3.5 py-2 text-sm rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition"
+                placeholder="https://mail.company.com"
+                class="w-full px-3.5 py-2 text-sm rounded-xl border border-input bg-card/60 hover:bg-card focus:bg-card focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition placeholder:text-muted-foreground"
               />
             </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div class="space-y-1.5">
-              <label class="text-xs font-semibold text-foreground">IMAP Server & Port</label>
+              <label class="text-xs font-semibold text-foreground">IMAP Server</label>
               <input
                 v-model="form.imap_server"
                 type="text"
                 placeholder="imap.gmail.com:993"
-                class="w-full px-3.5 py-2 text-sm font-mono rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition"
+                class="w-full px-3.5 py-2 text-sm font-mono rounded-xl border border-input bg-card/60 hover:bg-card focus:bg-card focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition placeholder:text-muted-foreground"
               />
             </div>
             <div class="space-y-1.5">
-              <label class="text-xs font-semibold text-foreground">SMTP Server & Port</label>
+              <label class="text-xs font-semibold text-foreground">SMTP Server</label>
               <input
                 v-model="form.smtp_server"
                 type="text"
                 placeholder="smtp.gmail.com:587"
-                class="w-full px-3.5 py-2 text-sm font-mono rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition"
+                class="w-full px-3.5 py-2 text-sm font-mono rounded-xl border border-input bg-card/60 hover:bg-card focus:bg-card focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition placeholder:text-muted-foreground"
               />
             </div>
           </div>
         </div>
 
         <!-- ================= 3. SOCIAL ACCOUNT ================= -->
-        <div v-else-if="form.type === 'social_account'" class="space-y-4 pt-2 border-t border-border">
-          <h4 class="text-xs font-bold text-muted-foreground uppercase tracking-wider">Social Platform Details</h4>
+        <div v-else-if="form.type === 'social_account'" class="space-y-4">
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div class="space-y-1.5">
-              <label class="text-xs font-semibold text-foreground">Platform</label>
+              <label class="text-xs font-semibold text-foreground">Social Platform *</label>
               <input
                 v-model="form.platform"
                 type="text"
-                placeholder="LinkedIn, X/Twitter, YouTube, GitHub"
-                class="w-full px-3.5 py-2 text-sm rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition"
+                placeholder="LinkedIn, Facebook, X / Twitter, YouTube, Instagram"
+                class="w-full px-3.5 py-2 text-sm rounded-xl border border-input bg-card/60 hover:bg-card focus:bg-card focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition placeholder:text-muted-foreground"
               />
             </div>
             <div class="space-y-1.5">
-              <label class="text-xs font-semibold text-foreground">Handle / Username</label>
+              <label class="text-xs font-semibold text-foreground">Username / Handle *</label>
               <input
                 v-model="form.username"
                 type="text"
-                placeholder="@companyname"
-                class="w-full px-3.5 py-2 text-sm rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition"
+                placeholder="@dbbindustries"
+                class="w-full px-3.5 py-2 text-sm rounded-xl border border-input bg-card/60 hover:bg-card focus:bg-card focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition placeholder:text-muted-foreground"
               />
             </div>
           </div>
@@ -528,8 +632,8 @@ function close() {
               <input
                 v-model="form.email"
                 type="email"
-                placeholder="social@company.corp"
-                class="w-full px-3.5 py-2 text-sm rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition"
+                placeholder="social@company.com"
+                class="w-full px-3.5 py-2 text-sm rounded-xl border border-input bg-card/60 hover:bg-card focus:bg-card focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition placeholder:text-muted-foreground"
               />
             </div>
             <div class="space-y-1.5">
@@ -537,8 +641,8 @@ function close() {
               <input
                 v-model="form.profile_url"
                 type="url"
-                placeholder="https://linkedin.com/company/example"
-                class="w-full px-3.5 py-2 text-sm rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition"
+                placeholder="https://linkedin.com/company/dbb-industries"
+                class="w-full px-3.5 py-2 text-sm rounded-xl border border-input bg-card/60 hover:bg-card focus:bg-card focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition placeholder:text-muted-foreground"
               />
             </div>
           </div>
@@ -549,15 +653,15 @@ function close() {
               <input
                 v-model="form.password"
                 :type="showPassword ? 'text' : 'password'"
-                placeholder="Password"
-                class="w-full px-3.5 py-2 text-sm font-mono rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition"
+                placeholder="Account password"
+                class="w-full px-3.5 py-2 text-sm font-mono rounded-xl border border-input bg-card/60 hover:bg-card focus:bg-card focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition placeholder:text-muted-foreground"
               />
             </div>
             <div class="space-y-1.5">
               <label class="text-xs font-semibold text-foreground">Access Level</label>
               <select
                 v-model="form.access_level"
-                class="w-full px-3.5 py-2 text-sm rounded-xl border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition"
+                class="w-full px-3.5 py-2 text-sm rounded-xl border border-input bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition"
               >
                 <option value="admin">Admin</option>
                 <option value="manager">Manager</option>
@@ -567,11 +671,11 @@ function close() {
               </select>
             </div>
             <div class="flex items-center pt-6">
-              <label class="flex items-center gap-2 text-xs font-semibold text-foreground cursor-pointer">
+              <label class="flex items-center gap-2 text-xs font-semibold text-foreground cursor-pointer select-none">
                 <input
                   v-model="form.two_factor_enabled"
                   type="checkbox"
-                  class="rounded border-border text-primary focus:ring-primary"
+                  class="rounded border-input text-primary focus:ring-primary"
                 />
                 <span>2FA Enabled</span>
               </label>
@@ -580,16 +684,15 @@ function close() {
         </div>
 
         <!-- ================= 4. COMPANY ACCOUNT ================= -->
-        <div v-else-if="form.type === 'company_account'" class="space-y-4 pt-2 border-t border-border">
-          <h4 class="text-xs font-bold text-muted-foreground uppercase tracking-wider">Company Enterprise Account</h4>
+        <div v-else-if="form.type === 'company_account'" class="space-y-4">
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div class="space-y-1.5">
-              <label class="text-xs font-semibold text-foreground">Service / Tool</label>
+              <label class="text-xs font-semibold text-foreground">Service / Enterprise Provider *</label>
               <input
                 v-model="form.provider"
                 type="text"
-                placeholder="Stripe, Slack, Salesforce, HubSpot"
-                class="w-full px-3.5 py-2 text-sm rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition"
+                placeholder="Stripe, Slack, Salesforce, HubSpot, Jira"
+                class="w-full px-3.5 py-2 text-sm rounded-xl border border-input bg-card/60 hover:bg-card focus:bg-card focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition placeholder:text-muted-foreground"
               />
             </div>
             <div class="space-y-1.5">
@@ -598,7 +701,7 @@ function close() {
                 v-model="form.account_id"
                 type="text"
                 placeholder="acct_109283019 or org-dbb"
-                class="w-full px-3.5 py-2 text-sm font-mono rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition"
+                class="w-full px-3.5 py-2 text-sm font-mono rounded-xl border border-input bg-card/60 hover:bg-card focus:bg-card focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition placeholder:text-muted-foreground"
               />
             </div>
           </div>
@@ -609,8 +712,8 @@ function close() {
               <input
                 v-model="form.username"
                 type="text"
-                placeholder="admin@company.corp"
-                class="w-full px-3.5 py-2 text-sm rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition"
+                placeholder="admin@company.com"
+                class="w-full px-3.5 py-2 text-sm rounded-xl border border-input bg-card/60 hover:bg-card focus:bg-card focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition placeholder:text-muted-foreground"
               />
             </div>
             <div class="space-y-1.5">
@@ -619,33 +722,44 @@ function close() {
                 v-model="form.password"
                 :type="showPassword ? 'text' : 'password'"
                 placeholder="Master credentials"
-                class="w-full px-3.5 py-2 text-sm font-mono rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition"
+                class="w-full px-3.5 py-2 text-sm font-mono rounded-xl border border-input bg-card/60 hover:bg-card focus:bg-card focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition placeholder:text-muted-foreground"
               />
             </div>
           </div>
 
-          <div class="space-y-1.5">
-            <label class="text-xs font-semibold text-foreground">Management Portal URL</label>
-            <input
-              v-model="form.login_url"
-              type="url"
-              placeholder="https://dashboard.stripe.com"
-              class="w-full px-3.5 py-2 text-sm rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition"
-            />
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="space-y-1.5">
+              <label class="text-xs font-semibold text-foreground">Management Portal URL</label>
+              <input
+                v-model="form.login_url"
+                type="url"
+                placeholder="https://dashboard.stripe.com"
+                class="w-full px-3.5 py-2 text-sm rounded-xl border border-input bg-card/60 hover:bg-card focus:bg-card focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition placeholder:text-muted-foreground"
+              />
+            </div>
+            <div class="space-y-1.5">
+              <label class="text-xs font-semibold text-foreground">Assigned To (Optional)</label>
+              <input
+                v-model="form.assigned_to"
+                type="text"
+                placeholder="e.g. Accounting Lead, Operations"
+                class="w-full px-3.5 py-2 text-sm rounded-xl border border-input bg-card/60 hover:bg-card focus:bg-card focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition placeholder:text-muted-foreground"
+              />
+            </div>
           </div>
         </div>
 
         <!-- ================= 5. PC / COMPUTER ================= -->
-        <div v-else-if="form.type === 'pc_computer'" class="space-y-4 pt-2 border-t border-border">
-          <h4 class="text-xs font-bold text-muted-foreground uppercase tracking-wider">Workstation / Computer Specs</h4>
+        <div v-else-if="form.type === 'pc_computer'" class="space-y-4">
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div class="space-y-1.5">
-              <label class="text-xs font-semibold text-foreground">Hostname *</label>
+              <label class="text-xs font-semibold text-foreground">Computer Name / Hostname *</label>
               <input
                 v-model="form.hostname"
                 type="text"
-                placeholder="WS-CORP-042"
-                class="w-full px-3.5 py-2 text-sm font-mono rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition"
+                required
+                placeholder="WS-CORP-042 or Accounting-PC"
+                class="w-full px-3.5 py-2 text-sm font-mono rounded-xl border border-input bg-card/60 hover:bg-card focus:bg-card focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition placeholder:text-muted-foreground"
               />
             </div>
             <div class="space-y-1.5">
@@ -653,15 +767,15 @@ function close() {
               <input
                 v-model="form.operating_system"
                 type="text"
-                placeholder="Windows 11 Pro, macOS Sonoma, Ubuntu 24.04"
-                class="w-full px-3.5 py-2 text-sm rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition"
+                placeholder="Windows 11 Pro, macOS Sequoia, Ubuntu 24.04"
+                class="w-full px-3.5 py-2 text-sm rounded-xl border border-input bg-card/60 hover:bg-card focus:bg-card focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition placeholder:text-muted-foreground"
               />
             </div>
             <div class="space-y-1.5">
               <label class="text-xs font-semibold text-foreground">Device Type</label>
               <select
                 v-model="form.device_type"
-                class="w-full px-3.5 py-2 text-sm rounded-xl border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition"
+                class="w-full px-3.5 py-2 text-sm rounded-xl border border-input bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition"
               >
                 <option value="desktop">Desktop</option>
                 <option value="laptop">Laptop</option>
@@ -678,8 +792,8 @@ function close() {
               <input
                 v-model="form.ip_address"
                 type="text"
-                placeholder="10.0.10.150"
-                class="w-full px-3.5 py-2 text-sm font-mono rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition"
+                placeholder="192.168.1.100"
+                class="w-full px-3.5 py-2 text-sm font-mono rounded-xl border border-input bg-card/60 hover:bg-card focus:bg-card focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition placeholder:text-muted-foreground"
               />
             </div>
             <div class="space-y-1.5">
@@ -688,58 +802,67 @@ function close() {
                 v-model="form.mac_address"
                 type="text"
                 placeholder="00:1B:44:11:3A:B7"
-                class="w-full px-3.5 py-2 text-sm font-mono rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition"
+                class="w-full px-3.5 py-2 text-sm font-mono rounded-xl border border-input bg-card/60 hover:bg-card focus:bg-card focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition placeholder:text-muted-foreground"
               />
             </div>
           </div>
 
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div class="space-y-1.5">
+              <label class="text-xs font-semibold text-foreground">Assigned To (Optional)</label>
+              <input
+                v-model="form.assigned_to"
+                type="text"
+                placeholder="e.g. Juan Dela Cruz"
+                class="w-full px-3.5 py-2 text-sm rounded-xl border border-input bg-card/60 hover:bg-card focus:bg-card focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition placeholder:text-muted-foreground"
+              />
+            </div>
             <div class="space-y-1.5">
               <label class="text-xs font-semibold text-foreground">Local Admin Username</label>
               <input
                 v-model="form.admin_account"
                 type="text"
                 placeholder="Administrator, root"
-                class="w-full px-3.5 py-2 text-sm rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition"
+                class="w-full px-3.5 py-2 text-sm rounded-xl border border-input bg-card/60 hover:bg-card focus:bg-card focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition placeholder:text-muted-foreground"
               />
             </div>
             <div class="space-y-1.5">
-              <label class="text-xs font-semibold text-foreground">Admin Password / BitLocker Key</label>
+              <label class="text-xs font-semibold text-foreground">Admin Password / PIN</label>
               <input
                 v-model="form.password"
                 :type="showPassword ? 'text' : 'password'"
                 placeholder="Workstation admin password"
-                class="w-full px-3.5 py-2 text-sm font-mono rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition"
+                class="w-full px-3.5 py-2 text-sm font-mono rounded-xl border border-input bg-card/60 hover:bg-card focus:bg-card focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition placeholder:text-muted-foreground"
               />
             </div>
           </div>
         </div>
 
         <!-- ================= 6. SERVER / VPS ================= -->
-        <div v-else-if="form.type === 'server'" class="space-y-4 pt-2 border-t border-border">
-          <h4 class="text-xs font-bold text-muted-foreground uppercase tracking-wider">Server & Host Parameters</h4>
+        <div v-else-if="form.type === 'server'" class="space-y-4">
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div class="space-y-1.5">
-              <label class="text-xs font-semibold text-foreground">Server Hostname / IP *</label>
+              <label class="text-xs font-semibold text-foreground">Server Name / Hostname *</label>
               <input
                 v-model="form.hostname"
                 type="text"
-                placeholder="db-prod-01.company.internal"
-                class="w-full px-3.5 py-2 text-sm font-mono rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition"
+                required
+                placeholder="db-prod-01.company.internal or 192.168.1.50"
+                class="w-full px-3.5 py-2 text-sm font-mono rounded-xl border border-input bg-card/60 hover:bg-card focus:bg-card focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition placeholder:text-muted-foreground"
               />
             </div>
             <div class="space-y-1.5">
               <label class="text-xs font-semibold text-foreground">Protocol</label>
               <select
                 v-model="form.protocol"
-                class="w-full px-3.5 py-2 text-sm rounded-xl border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition"
+                class="w-full px-3.5 py-2 text-sm rounded-xl border border-input bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition"
               >
                 <option value="SSH">SSH</option>
                 <option value="RDP">RDP</option>
-                <option value="FTP">FTP</option>
                 <option value="SFTP">SFTP</option>
-                <option value="HTTP">HTTP</option>
+                <option value="FTP">FTP</option>
                 <option value="HTTPS">HTTPS</option>
+                <option value="HTTP">HTTP</option>
               </select>
             </div>
             <div class="space-y-1.5">
@@ -748,7 +871,7 @@ function close() {
                 v-model.number="form.port"
                 type="number"
                 placeholder="22"
-                class="w-full px-3.5 py-2 text-sm font-mono rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition"
+                class="w-full px-3.5 py-2 text-sm font-mono rounded-xl border border-input bg-card/60 hover:bg-card focus:bg-card focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition placeholder:text-muted-foreground"
               />
             </div>
           </div>
@@ -758,7 +881,7 @@ function close() {
               <label class="text-xs font-semibold text-foreground">Environment</label>
               <select
                 v-model="form.environment"
-                class="w-full px-3.5 py-2 text-sm rounded-xl border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition"
+                class="w-full px-3.5 py-2 text-sm rounded-xl border border-input bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition"
               >
                 <option value="production">Production</option>
                 <option value="staging">Staging</option>
@@ -772,7 +895,7 @@ function close() {
                 v-model="form.username"
                 type="text"
                 placeholder="ubuntu, root, ec2-user"
-                class="w-full px-3.5 py-2 text-sm font-mono rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition"
+                class="w-full px-3.5 py-2 text-sm font-mono rounded-xl border border-input bg-card/60 hover:bg-card focus:bg-card focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition placeholder:text-muted-foreground"
               />
             </div>
             <div class="space-y-1.5">
@@ -780,8 +903,8 @@ function close() {
               <input
                 v-model="form.password"
                 :type="showPassword ? 'text' : 'password'"
-                placeholder="Secret or Private Key passphrase"
-                class="w-full px-3.5 py-2 text-sm font-mono rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition"
+                placeholder="Secret or SSH Key passphrase"
+                class="w-full px-3.5 py-2 text-sm font-mono rounded-xl border border-input bg-card/60 hover:bg-card focus:bg-card focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition placeholder:text-muted-foreground"
               />
             </div>
           </div>
@@ -791,33 +914,33 @@ function close() {
             <input
               v-model="form.server_url"
               type="url"
-              placeholder="https://192.168.1.50:8006 (Proxmox / ESXi)"
-              class="w-full px-3.5 py-2 text-sm rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition"
+              placeholder="https://192.168.1.50:8006 (Proxmox / Portainer / ESXi)"
+              class="w-full px-3.5 py-2 text-sm rounded-xl border border-input bg-card/60 hover:bg-card focus:bg-card focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition placeholder:text-muted-foreground"
             />
           </div>
         </div>
 
         <!-- ================= 7. WI-FI ================= -->
-        <div v-else-if="form.type === 'wifi'" class="space-y-4 pt-2 border-t border-border">
-          <h4 class="text-xs font-bold text-muted-foreground uppercase tracking-wider">Wi-Fi Wireless Settings</h4>
+        <div v-else-if="form.type === 'wifi'" class="space-y-4">
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div class="space-y-1.5">
-              <label class="text-xs font-semibold text-foreground">Network SSID *</label>
+              <label class="text-xs font-semibold text-foreground">Wi-Fi Network Name (SSID) *</label>
               <input
                 v-model="form.ssid"
                 type="text"
+                required
                 placeholder="DBB_Corporate_5G"
-                class="w-full px-3.5 py-2 text-sm font-mono rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition"
+                class="w-full px-3.5 py-2 text-sm font-mono rounded-xl border border-input bg-card/60 hover:bg-card focus:bg-card focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition placeholder:text-muted-foreground"
               />
             </div>
             <div class="space-y-1.5">
               <label class="text-xs font-semibold text-foreground">Security Protocol</label>
               <select
                 v-model="form.security_type"
-                class="w-full px-3.5 py-2 text-sm rounded-xl border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition"
+                class="w-full px-3.5 py-2 text-sm rounded-xl border border-input bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition"
               >
-                <option value="WPA3">WPA3-Personal</option>
                 <option value="WPA2">WPA2-PSK (AES)</option>
+                <option value="WPA3">WPA3-Personal</option>
                 <option value="Enterprise">WPA2/WPA3-Enterprise</option>
                 <option value="WEP">WEP (Legacy)</option>
                 <option value="Open">Open</option>
@@ -832,7 +955,7 @@ function close() {
                 v-model="form.password"
                 :type="showPassword ? 'text' : 'password'"
                 placeholder="Wireless password"
-                class="w-full px-3.5 py-2 text-sm font-mono rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition"
+                class="w-full px-3.5 py-2 text-sm font-mono rounded-xl border border-input bg-card/60 hover:bg-card focus:bg-card focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition placeholder:text-muted-foreground"
               />
             </div>
             <div class="space-y-1.5">
@@ -841,34 +964,34 @@ function close() {
                 v-model="form.router_ip"
                 type="text"
                 placeholder="192.168.1.1 or 10.0.0.1"
-                class="w-full px-3.5 py-2 text-sm font-mono rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition"
+                class="w-full px-3.5 py-2 text-sm font-mono rounded-xl border border-input bg-card/60 hover:bg-card focus:bg-card focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition placeholder:text-muted-foreground"
               />
             </div>
           </div>
 
           <div class="flex items-center">
-            <label class="flex items-center gap-2 text-xs font-semibold text-foreground cursor-pointer">
+            <label class="flex items-center gap-2 text-xs font-semibold text-foreground cursor-pointer select-none">
               <input
                 v-model="form.hidden_network"
                 type="checkbox"
-                class="rounded border-border text-primary focus:ring-primary"
+                class="rounded border-input text-primary focus:ring-primary"
               />
-              <span>Hidden SSID Network</span>
+              <span>Hidden Network (SSID Broadcast Disabled)</span>
             </label>
           </div>
         </div>
 
         <!-- ================= 8. DOMAIN ================= -->
-        <div v-else-if="form.type === 'domain'" class="space-y-4 pt-2 border-t border-border">
-          <h4 class="text-xs font-bold text-muted-foreground uppercase tracking-wider">Domain Registration Details</h4>
+        <div v-else-if="form.type === 'domain'" class="space-y-4">
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div class="space-y-1.5">
               <label class="text-xs font-semibold text-foreground">Domain Name *</label>
               <input
                 v-model="form.domain_name"
                 type="text"
+                required
                 placeholder="dbbindustries.com"
-                class="w-full px-3.5 py-2 text-sm font-mono rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition"
+                class="w-full px-3.5 py-2 text-sm font-mono rounded-xl border border-input bg-card/60 hover:bg-card focus:bg-card focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition placeholder:text-muted-foreground"
               />
             </div>
             <div class="space-y-1.5">
@@ -877,7 +1000,7 @@ function close() {
                 v-model="form.registrar"
                 type="text"
                 placeholder="Cloudflare Registrar, GoDaddy, Namecheap, Route53"
-                class="w-full px-3.5 py-2 text-sm rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition"
+                class="w-full px-3.5 py-2 text-sm rounded-xl border border-input bg-card/60 hover:bg-card focus:bg-card focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition placeholder:text-muted-foreground"
               />
             </div>
           </div>
@@ -888,7 +1011,7 @@ function close() {
               <input
                 v-model="form.registration_date"
                 type="date"
-                class="w-full px-3.5 py-2 text-sm rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition"
+                class="w-full px-3.5 py-2 text-sm rounded-xl border border-input bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition"
               />
             </div>
             <div class="space-y-1.5">
@@ -896,15 +1019,15 @@ function close() {
               <input
                 v-model="form.expiration_date"
                 type="date"
-                class="w-full px-3.5 py-2 text-sm rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition"
+                class="w-full px-3.5 py-2 text-sm rounded-xl border border-input bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition"
               />
             </div>
             <div class="flex items-center pt-6">
-              <label class="flex items-center gap-2 text-xs font-semibold text-foreground cursor-pointer">
+              <label class="flex items-center gap-2 text-xs font-semibold text-foreground cursor-pointer select-none">
                 <input
                   v-model="form.auto_renew"
                   type="checkbox"
-                  class="rounded border-border text-primary focus:ring-primary"
+                  class="rounded border-input text-primary focus:ring-primary"
                 />
                 <span>Auto-Renewal Active</span>
               </label>
@@ -917,22 +1040,22 @@ function close() {
               v-model="form.nameservers"
               type="text"
               placeholder="ns1.cloudflare.com, ns2.cloudflare.com"
-              class="w-full px-3.5 py-2 text-sm font-mono rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition"
+              class="w-full px-3.5 py-2 text-sm font-mono rounded-xl border border-input bg-card/60 hover:bg-card focus:bg-card focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition placeholder:text-muted-foreground"
             />
           </div>
         </div>
 
         <!-- ================= 9. HOSTING ================= -->
-        <div v-else-if="form.type === 'hosting'" class="space-y-4 pt-2 border-t border-border">
-          <h4 class="text-xs font-bold text-muted-foreground uppercase tracking-wider">Web Hosting & Storage Services</h4>
+        <div v-else-if="form.type === 'hosting'" class="space-y-4">
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div class="space-y-1.5">
-              <label class="text-xs font-semibold text-foreground">Hosting Provider *</label>
+              <label class="text-xs font-semibold text-foreground">Hosting Provider / Service *</label>
               <input
                 v-model="form.provider"
                 type="text"
+                required
                 placeholder="AWS, Vercel, DigitalOcean, SiteGround, cPanel"
-                class="w-full px-3.5 py-2 text-sm rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition"
+                class="w-full px-3.5 py-2 text-sm rounded-xl border border-input bg-card/60 hover:bg-card focus:bg-card focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition placeholder:text-muted-foreground"
               />
             </div>
             <div class="space-y-1.5">
@@ -941,7 +1064,7 @@ function close() {
                 v-model="form.control_panel"
                 type="text"
                 placeholder="cPanel, Plesk, AWS Console, CyberPanel"
-                class="w-full px-3.5 py-2 text-sm rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition"
+                class="w-full px-3.5 py-2 text-sm rounded-xl border border-input bg-card/60 hover:bg-card focus:bg-card focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition placeholder:text-muted-foreground"
               />
             </div>
           </div>
@@ -951,8 +1074,8 @@ function close() {
             <input
               v-model="form.dashboard_url"
               type="url"
-              placeholder="https://cpanel.company.corp:2083"
-              class="w-full px-3.5 py-2 text-sm rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition"
+              placeholder="https://cpanel.company.com:2083"
+              class="w-full px-3.5 py-2 text-sm rounded-xl border border-input bg-card/60 hover:bg-card focus:bg-card focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition placeholder:text-muted-foreground"
             />
           </div>
 
@@ -962,8 +1085,8 @@ function close() {
               <input
                 v-model="form.ftp_host"
                 type="text"
-                placeholder="ftp.company.corp"
-                class="w-full px-3.5 py-2 text-sm font-mono rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition"
+                placeholder="ftp.company.com"
+                class="w-full px-3.5 py-2 text-sm font-mono rounded-xl border border-input bg-card/60 hover:bg-card focus:bg-card focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition placeholder:text-muted-foreground"
               />
             </div>
             <div class="space-y-1.5">
@@ -972,7 +1095,7 @@ function close() {
                 v-model="form.ftp_username"
                 type="text"
                 placeholder="deploy_ftp"
-                class="w-full px-3.5 py-2 text-sm font-mono rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition"
+                class="w-full px-3.5 py-2 text-sm font-mono rounded-xl border border-input bg-card/60 hover:bg-card focus:bg-card focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition placeholder:text-muted-foreground"
               />
             </div>
             <div class="space-y-1.5">
@@ -981,23 +1104,23 @@ function close() {
                 v-model="form.password"
                 :type="showPassword ? 'text' : 'password'"
                 placeholder="FTP Password"
-                class="w-full px-3.5 py-2 text-sm font-mono rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition"
+                class="w-full px-3.5 py-2 text-sm font-mono rounded-xl border border-input bg-card/60 hover:bg-card focus:bg-card focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition placeholder:text-muted-foreground"
               />
             </div>
           </div>
         </div>
 
         <!-- ================= 10. SOFTWARE LICENSE ================= -->
-        <div v-else-if="form.type === 'software_license'" class="space-y-4 pt-2 border-t border-border">
-          <h4 class="text-xs font-bold text-muted-foreground uppercase tracking-wider">Software License & Product Keys</h4>
+        <div v-else-if="form.type === 'software_license'" class="space-y-4">
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div class="space-y-1.5">
               <label class="text-xs font-semibold text-foreground">Software Name *</label>
               <input
                 v-model="form.software_name"
                 type="text"
-                placeholder="Adobe Creative Cloud, JetBrains All Products, IntelliJ, Figma"
-                class="w-full px-3.5 py-2 text-sm rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition"
+                required
+                placeholder="Adobe Creative Cloud, JetBrains All Products, Figma"
+                class="w-full px-3.5 py-2 text-sm rounded-xl border border-input bg-card/60 hover:bg-card focus:bg-card focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition placeholder:text-muted-foreground"
               />
             </div>
             <div class="space-y-1.5">
@@ -1006,7 +1129,7 @@ function close() {
                 v-model="form.vendor"
                 type="text"
                 placeholder="Adobe Systems, JetBrains, Microsoft"
-                class="w-full px-3.5 py-2 text-sm rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition"
+                class="w-full px-3.5 py-2 text-sm rounded-xl border border-input bg-card/60 hover:bg-card focus:bg-card focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition placeholder:text-muted-foreground"
               />
             </div>
           </div>
@@ -1016,31 +1139,32 @@ function close() {
             <input
               v-model="form.license_key"
               type="text"
+              required
               placeholder="XXXXX-XXXXX-XXXXX-XXXXX-XXXXX"
-              class="w-full px-3.5 py-2 text-sm font-mono rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition"
+              class="w-full px-3.5 py-2 text-sm font-mono rounded-xl border border-input bg-card/60 hover:bg-card focus:bg-card focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition placeholder:text-muted-foreground"
             />
           </div>
 
-          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
             <div class="space-y-1.5">
               <label class="text-xs font-semibold text-foreground">License Model</label>
               <select
                 v-model="form.license_type"
-                class="w-full px-3.5 py-2 text-sm rounded-xl border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition"
+                class="w-full px-3.5 py-2 text-sm rounded-xl border border-input bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition"
               >
                 <option value="per-seat">Per-Seat</option>
-                <option value="site">Site License</option>
                 <option value="subscription">Subscription</option>
+                <option value="site">Site License</option>
                 <option value="lifetime">Lifetime</option>
               </select>
             </div>
             <div class="space-y-1.5">
-              <label class="text-xs font-semibold text-foreground">Seat Count / Licenses</label>
+              <label class="text-xs font-semibold text-foreground">Seat Count</label>
               <input
                 v-model.number="form.seat_count"
                 type="number"
                 placeholder="5"
-                class="w-full px-3.5 py-2 text-sm rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition"
+                class="w-full px-3.5 py-2 text-sm rounded-xl border border-input bg-card/60 hover:bg-card focus:bg-card focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition placeholder:text-muted-foreground"
               />
             </div>
             <div class="space-y-1.5">
@@ -1048,79 +1172,217 @@ function close() {
               <input
                 v-model="form.expiration_date"
                 type="date"
-                class="w-full px-3.5 py-2 text-sm rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition"
+                class="w-full px-3.5 py-2 text-sm rounded-xl border border-input bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition"
+              />
+            </div>
+            <div class="space-y-1.5">
+              <label class="text-xs font-semibold text-foreground">Assigned To (Optional)</label>
+              <input
+                v-model="form.assigned_to"
+                type="text"
+                placeholder="e.g. Design Team, Juan Dela Cruz"
+                class="w-full px-3.5 py-2 text-sm rounded-xl border border-input bg-card/60 hover:bg-card focus:bg-card focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition placeholder:text-muted-foreground"
               />
             </div>
           </div>
         </div>
 
         <!-- ================= 11. SECURE NOTE ================= -->
-        <div v-else-if="form.type === 'note'" class="space-y-3 pt-2 border-t border-border">
-          <h4 class="text-xs font-bold text-muted-foreground uppercase tracking-wider">Confidential Company Note</h4>
+        <div v-else-if="form.type === 'note'" class="space-y-3">
           <div class="space-y-1.5">
-            <label class="text-xs font-semibold text-foreground">Secure Content</label>
+            <label class="text-xs font-semibold text-foreground">Note Title (Optional)</label>
+            <input
+              v-model="form.name"
+              type="text"
+              placeholder="e.g. Server Recovery Runbook (leave blank to auto-derive)"
+              class="w-full px-3.5 py-2 text-sm rounded-xl border border-input bg-card/60 hover:bg-card focus:bg-card focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition placeholder:text-muted-foreground"
+            />
+          </div>
+
+          <div class="space-y-1.5">
+            <label class="text-xs font-semibold text-foreground">Confidential Content *</label>
             <textarea
               v-model="form.content"
-              rows="7"
+              rows="8"
+              required
               placeholder="Store confidential operational procedures, recovery master keys, API client secrets, server configuration notes..."
-              class="w-full px-3.5 py-2.5 text-sm font-mono rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition leading-relaxed"
+              class="w-full px-3.5 py-2.5 text-sm font-mono rounded-xl border border-input bg-card/60 hover:bg-card focus:bg-card focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition placeholder:text-muted-foreground leading-relaxed"
             />
           </div>
         </div>
 
         <!-- ================= 12. EMPLOYEE IDENTITY PROFILE ================= -->
-        <div v-else-if="form.type === 'identity'" class="space-y-4 pt-2 border-t border-border">
-          <h4 class="text-xs font-bold text-muted-foreground uppercase tracking-wider">Employee Personnel Profile</h4>
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div class="space-y-1.5">
-              <label class="text-xs font-semibold text-foreground">Full Name *</label>
-              <input
-                v-model="form.full_name"
-                type="text"
-                placeholder="Sarah Connor"
-                class="w-full px-3.5 py-2 text-sm rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition"
-              />
+        <div v-else-if="form.type === 'identity'" class="space-y-5">
+          <!-- 1. Personal & Employment Basics -->
+          <div class="space-y-3">
+            <h4 class="text-xs font-bold text-foreground uppercase tracking-wider flex items-center gap-1.5">
+              <span>Employee Information</span>
+            </h4>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div class="space-y-1.5">
+                <label class="text-xs font-semibold text-foreground">Employee's Name *</label>
+                <input
+                  v-model="form.full_name"
+                  type="text"
+                  required
+                  placeholder="e.g. Marc Louie"
+                  class="w-full px-3.5 py-2 text-sm rounded-xl border border-input bg-card/60 hover:bg-card focus:bg-card focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition placeholder:text-muted-foreground"
+                />
+              </div>
+              <div class="space-y-1.5">
+                <label class="text-xs font-semibold text-foreground">DMBB/DBB ID No.</label>
+                <input
+                  v-model="form.dmbb_id"
+                  type="text"
+                  placeholder="e.g. 2022-00130"
+                  class="w-full px-3.5 py-2 text-sm font-mono rounded-xl border border-input bg-card/60 hover:bg-card focus:bg-card focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition placeholder:text-muted-foreground"
+                />
+              </div>
             </div>
-            <div class="space-y-1.5">
-              <label class="text-xs font-semibold text-foreground">Job Title / Position</label>
-              <input
-                v-model="form.position"
-                type="text"
-                placeholder="Lead DevOps Engineer"
-                class="w-full px-3.5 py-2 text-sm rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition"
-              />
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div class="space-y-1.5">
+                <label class="text-xs font-semibold text-foreground">Department</label>
+                <input
+                  v-model="form.department"
+                  type="text"
+                  placeholder="e.g. Warehouse, IT, HR, Lineman"
+                  class="w-full px-3.5 py-2 text-sm rounded-xl border border-input bg-card/60 hover:bg-card focus:bg-card focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition placeholder:text-muted-foreground"
+                />
+              </div>
+              <div class="space-y-1.5">
+                <label class="text-xs font-semibold text-foreground">Position</label>
+                <input
+                  v-model="form.position"
+                  type="text"
+                  placeholder="e.g. Expediter, Specialist"
+                  class="w-full px-3.5 py-2 text-sm rounded-xl border border-input bg-card/60 hover:bg-card focus:bg-card focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition placeholder:text-muted-foreground"
+                />
+              </div>
+              <div class="space-y-1.5">
+                <label class="text-xs font-semibold text-foreground">Contract</label>
+                <select
+                  v-model="form.contract"
+                  class="w-full px-3.5 py-2 text-sm rounded-xl border border-input bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition"
+                >
+                  <option value="Regular">Regular</option>
+                  <option value="Probationary">Probationary</option>
+                  <option value="Contractual">Contractual</option>
+                  <option value="Project-Based">Project-Based</option>
+                  <option value="Casual">Casual</option>
+                  <option value="Part-Time">Part-Time</option>
+                  <option value="Consultant">Consultant</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div class="space-y-1.5">
+                <label class="text-xs font-semibold text-foreground">Status</label>
+                <select
+                  v-model="form.status"
+                  class="w-full px-3.5 py-2 text-sm rounded-xl border border-input bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition"
+                >
+                  <option value="Active">Active</option>
+                  <option value="Inactive">Inactive</option>
+                  <option value="On Leave">On Leave</option>
+                  <option value="Resigned">Resigned</option>
+                  <option value="Terminated">Terminated</option>
+                </select>
+              </div>
+              <div class="space-y-1.5">
+                <label class="text-xs font-semibold text-foreground">Birthdate</label>
+                <input
+                  v-model="form.birthdate"
+                  type="text"
+                  placeholder="e.g. July 9, 2000 or YYYY-MM-DD"
+                  class="w-full px-3.5 py-2 text-sm rounded-xl border border-input bg-card/60 hover:bg-card focus:bg-card focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition placeholder:text-muted-foreground"
+                />
+              </div>
             </div>
           </div>
 
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div class="space-y-1.5">
-              <label class="text-xs font-semibold text-foreground">Work Email</label>
-              <input
-                v-model="form.work_email"
-                type="email"
-                placeholder="sarah.c@company.corp"
-                class="w-full px-3.5 py-2 text-sm rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition"
-              />
+          <!-- 2. Philippine Government IDs -->
+          <div class="pt-3 border-t border-border space-y-3">
+            <div class="flex items-center justify-between">
+              <h4 class="text-xs font-bold text-foreground uppercase tracking-wider">Philippine Government IDs</h4>
+              <span class="text-[10px] text-muted-foreground">Optional fields</span>
             </div>
-            <div class="space-y-1.5">
-              <label class="text-xs font-semibold text-foreground">Work Phone</label>
-              <input
-                v-model="form.work_phone"
-                type="tel"
-                placeholder="+1 (555) 234-5678"
-                class="w-full px-3.5 py-2 text-sm rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition"
-              />
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div class="space-y-1.5">
+                <label class="text-xs font-semibold text-foreground">SSS No.</label>
+                <input
+                  v-model="form.sss_no"
+                  type="text"
+                  placeholder=""
+                  class="w-full px-3.5 py-2 text-sm font-mono rounded-xl border border-input bg-card/60 hover:bg-card focus:bg-card focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition placeholder:text-muted-foreground"
+                />
+              </div>
+              <div class="space-y-1.5">
+                <label class="text-xs font-semibold text-foreground">HDMF / Pag-IBIG No.</label>
+                <input
+                  v-model="form.hdmf_no"
+                  type="text"
+                  placeholder=""
+                  class="w-full px-3.5 py-2 text-sm font-mono rounded-xl border border-input bg-card/60 hover:bg-card focus:bg-card focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition placeholder:text-muted-foreground"
+                />
+              </div>
+              <div class="space-y-1.5">
+                <label class="text-xs font-semibold text-foreground">PHIC / PhilHealth No.</label>
+                <input
+                  v-model="form.phic_no"
+                  type="text"
+                  placeholder=""
+                  class="w-full px-3.5 py-2 text-sm font-mono rounded-xl border border-input bg-card/60 hover:bg-card focus:bg-card focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition placeholder:text-muted-foreground"
+                />
+              </div>
+              <div class="space-y-1.5">
+                <label class="text-xs font-semibold text-foreground">TIN No.</label>
+                <input
+                  v-model="form.tin_no"
+                  type="text"
+                  placeholder=""
+                  class="w-full px-3.5 py-2 text-sm font-mono rounded-xl border border-input bg-card/60 hover:bg-card focus:bg-card focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition placeholder:text-muted-foreground"
+                />
+              </div>
             </div>
           </div>
 
-          <div class="space-y-1.5">
-            <label class="text-xs font-semibold text-foreground">Office / Desk Location</label>
-            <input
-              v-model="form.office_address"
-              type="text"
-              placeholder="Building A, Floor 3, Desk 42"
-              class="w-full px-3.5 py-2 text-sm rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition"
+          <!-- 3. Contact Details & Emergency -->
+          <div class="pt-3 border-t border-border space-y-3">
+            <h4 class="text-xs font-bold text-foreground uppercase tracking-wider">Contact & Emergency</h4>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <PhoneInput
+                v-model="form.contact_no"
+                label="Contact No."
+                placeholder="0917 123 4567"
+                helper="Primary mobile or contact number"
+              />
+              <div class="space-y-1.5">
+                <label class="text-xs font-semibold text-foreground">Work Email</label>
+                <input
+                  v-model="form.work_email"
+                  type="email"
+                  placeholder="e.g. marclouie@dbb.com"
+                  class="w-full px-3.5 py-2 text-sm rounded-xl border border-input bg-card/60 hover:bg-card focus:bg-card focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition placeholder:text-muted-foreground"
+                />
+              </div>
+            </div>
+
+            <AddressInput
+              v-model="form.address"
+              label="Address"
             />
+
+            <div class="space-y-1.5">
+              <label class="text-xs font-semibold text-foreground">In Case of Emergency (ICE)</label>
+              <input
+                v-model="form.emergency_contact"
+                type="text"
+                placeholder="e.g. Kathryn Bernardo (Wife) - 0918-0000-1234"
+                class="w-full px-3.5 py-2 text-sm rounded-xl border border-input bg-card/60 hover:bg-card focus:bg-card focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition placeholder:text-muted-foreground"
+              />
+            </div>
           </div>
         </div>
 
@@ -1131,7 +1393,7 @@ function close() {
             <h4 class="text-xs font-bold text-foreground uppercase tracking-wider">Company Assignment & Location</h4>
           </div>
 
-          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <!-- Company -->
             <div class="space-y-1.5">
               <label class="text-xs font-semibold text-foreground">Company Name</label>
@@ -1139,8 +1401,8 @@ function close() {
                 v-model="form.company"
                 type="text"
                 list="companies-list"
-                placeholder="e.g. DBB Industries"
-                class="w-full px-3.5 py-2 text-sm rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition"
+                placeholder="e.g. DMBB Industrial"
+                class="w-full px-3.5 py-2 text-sm rounded-xl border border-input bg-card/60 hover:bg-card focus:bg-card focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition placeholder:text-muted-foreground"
               />
               <datalist id="companies-list">
                 <option v-for="c in uniqueCompanies" :key="c" :value="c" />
@@ -1155,7 +1417,7 @@ function close() {
                 type="text"
                 list="departments-list"
                 placeholder="Engineering, IT, Marketing"
-                class="w-full px-3.5 py-2 text-sm rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition"
+                class="w-full px-3.5 py-2 text-sm rounded-xl border border-input bg-card/60 hover:bg-card focus:bg-card focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition placeholder:text-muted-foreground"
               />
               <datalist id="departments-list">
                 <option v-for="d in uniqueDepartments" :key="d" :value="d" />
@@ -1164,37 +1426,27 @@ function close() {
 
             <!-- Team -->
             <div class="space-y-1.5">
-              <label class="text-xs font-semibold text-foreground">Team / Squad</label>
+              <label class="text-xs font-semibold text-foreground">Team / Unit</label>
               <input
                 v-model="form.team"
                 type="text"
                 list="teams-list"
-                placeholder="DevOps, Infrastructure, Growth"
-                class="w-full px-3.5 py-2 text-sm rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition"
+                placeholder="DevOps, QA, Frontend"
+                class="w-full px-3.5 py-2 text-sm rounded-xl border border-input bg-card/60 hover:bg-card focus:bg-card focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition placeholder:text-muted-foreground"
               />
               <datalist id="teams-list">
-                <option v-for="tm in uniqueTeams" :key="tm" :value="tm" />
+                <option v-for="t in uniqueTeams" :key="t" :value="t" />
               </datalist>
             </div>
-          </div>
 
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <!-- Location -->
             <div class="space-y-1.5">
-              <label class="text-xs font-semibold text-foreground">Assigned Person</label>
-              <input
-                v-model="form.assigned_to"
-                type="text"
-                placeholder="Employee or Team Lead name"
-                class="w-full px-3.5 py-2 text-sm rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition"
-              />
-            </div>
-            <div class="space-y-1.5">
-              <label class="text-xs font-semibold text-foreground">Physical / Regional Location</label>
+              <label class="text-xs font-semibold text-foreground">Office Location</label>
               <input
                 v-model="form.location"
                 type="text"
-                placeholder="HQ Office, Server Room B, Remote"
-                class="w-full px-3.5 py-2 text-sm rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition"
+                placeholder="City Of Naga"
+                class="w-full px-3.5 py-2 text-sm rounded-xl border border-input bg-card/60 hover:bg-card focus:bg-card focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition placeholder:text-muted-foreground"
               />
             </div>
           </div>
@@ -1223,7 +1475,7 @@ function close() {
                   @keydown.enter.prevent="handleCreateCategory"
                   type="text"
                   placeholder="Category name"
-                  class="flex-1 px-3 py-1.5 text-xs rounded-lg border border-border bg-background text-foreground placeholder:text-muted-foreground"
+                  class="flex-1 px-3 py-1.5 text-xs rounded-lg border border-input bg-card text-foreground placeholder:text-muted-foreground"
                 />
                 <button
                   type="button"
@@ -1236,7 +1488,7 @@ function close() {
 
               <select
                 v-model="form.category"
-                class="w-full px-3.5 py-2 text-sm rounded-xl border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition"
+                class="w-full px-3.5 py-2 text-sm rounded-xl border border-input bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition"
               >
                 <option v-for="cat in categories" :key="cat.id" :value="cat.name">
                   {{ cat.name }}
@@ -1254,7 +1506,7 @@ function close() {
                   @keydown.,.prevent="addTag"
                   type="text"
                   placeholder="Type tag and press Enter"
-                  class="flex-1 px-3.5 py-2 text-sm rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition"
+                  class="flex-1 px-3.5 py-2 text-sm rounded-xl border border-input bg-card/60 hover:bg-card focus:bg-card focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition placeholder:text-muted-foreground"
                 />
                 <button
                   type="button"
@@ -1288,7 +1540,7 @@ function close() {
               v-model="form.notes"
               rows="3"
               placeholder="Additional internal instructions, renewal dates, security protocols, or contact points..."
-              class="w-full px-3.5 py-2 text-sm rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition"
+              class="w-full px-3.5 py-2 text-sm rounded-xl border border-input bg-card/60 hover:bg-card focus:bg-card focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition placeholder:text-muted-foreground"
             />
           </div>
         </div>
@@ -1307,7 +1559,7 @@ function close() {
             class="flex items-center gap-2 px-5 py-2.5 text-xs font-bold bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl shadow-md transition"
           >
             <Lock class="w-3.5 h-3.5" />
-            <span>{{ itemToEdit ? 'Update Company Credential' : 'Save to Vault' }}</span>
+            <span>{{ itemToEdit ? 'Update Credential' : 'Save Credential' }}</span>
           </button>
         </div>
       </form>

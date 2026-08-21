@@ -15,15 +15,14 @@ import TagsView from '@/components/vault/TagsView.vue'
 import BackupView from '@/components/vault/BackupView.vue'
 import TrashView from '@/components/vault/TrashView.vue'
 import SettingsView from '@/components/vault/SettingsView.vue'
+import EmployeeManagementView from '@/components/employee/EmployeeManagementView.vue'
 import CredentialTypeIcon from '@/components/vault/CredentialTypeIcon.vue'
 import ToastContainer from '@/components/common/ToastContainer.vue'
 import {
   Search,
-  Plus,
   Lock,
   Star,
   X,
-  Sparkles,
   Moon,
   Sun,
   Copy,
@@ -299,6 +298,13 @@ const currentViewTitle = computed(() => {
 
         <template v-else-if="selectedFilter === 'settings'">
           <SettingsView />
+        </template>
+
+        <template v-else-if="selectedFilter === 'identities'">
+          <EmployeeManagementView
+            @add-employee="openAddItem('identity')"
+            @edit-employee="openEditItem"
+          />
         </template>
 
         <!-- 2. Dual Pane Split Vault View (All Items / Passwords / Servers / Domains / etc.) -->

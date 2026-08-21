@@ -30,6 +30,57 @@ const DEFAULT_SETTINGS: AppSettings = {
 const INITIAL_VAULT_ITEMS: VaultItem[] = [
 ]
 
+// Helper to automatically derive a clean, meaningful record name from specific credential fields
+export function deriveItemName(item: Partial<VaultItem>): string {
+  if (item.name && item.name.trim()) return item.name.trim()
+
+  switch (item.type) {
+    case 'email_account':
+      return item.email || (item.provider ? `${item.provider} Email` : 'Email Account')
+    case 'pc_computer':
+      return item.hostname || (item.operating_system ? `${item.operating_system} PC` : 'Workstation PC')
+    case 'domain':
+      return item.domain_name || 'Domain Record'
+    case 'wifi':
+      return item.ssid || 'Wi-Fi Network'
+    case 'software_license':
+      return item.software_name || (item.vendor ? `${item.vendor} License` : 'Software License')
+    case 'social_account':
+      if (item.platform) {
+        return item.username ? `${item.platform} (${item.username})` : item.platform
+      }
+      return item.username || 'Social Account'
+    case 'company_account':
+      if (item.provider) {
+        return item.account_id ? `${item.provider} (${item.account_id})` : item.provider
+      }
+      return item.account_id || 'Company Account'
+    case 'server':
+      return item.hostname || item.server_url || 'Server Host'
+    case 'hosting':
+      return item.provider || item.dashboard_url || 'Hosting Service'
+    case 'identity':
+      return item.full_name || item.name || item.position || (item.dmbb_id ? `Employee ${item.dmbb_id}` : 'Employee Profile')
+    case 'note':
+      if (item.content) {
+        const firstLine = item.content.trim().split('\n')[0].replace(/^[#\s*-_]+/, '').trim()
+        if (firstLine) return firstLine.slice(0, 45)
+      }
+      return 'Secure Note'
+    case 'password':
+    default:
+      if (item.website_url) {
+        try {
+          const url = new URL(item.website_url.startsWith('http') ? item.website_url : `https://${item.website_url}`)
+          return url.hostname.replace(/^www\./, '')
+        } catch {
+          return item.website_url
+        }
+      }
+      return item.username || item.email || 'Login Credential'
+  }
+}
+
 export class LocalStorageService {
   // Initialize user & database if not present
   static async initializeDatabase(): Promise<User> {
@@ -150,9 +201,10 @@ export class LocalStorageService {
   }
 
   // Add or update item
-  static upsertItem(item: Partial<VaultItem> & { name: string; type: VaultItem['type'] }): VaultItem {
+  static upsertItem(item: Partial<VaultItem> & { type: VaultItem['type']; name?: string }): VaultItem {
     const items = this.getItems()
     const now = new Date().toISOString()
+    const resolvedName = deriveItemName(item)
 
     if (item.id) {
       const index = items.findIndex((i) => i.id === item.id)
@@ -160,6 +212,7 @@ export class LocalStorageService {
         const updated: VaultItem = {
           ...items[index],
           ...item,
+          name: resolvedName,
           company: item.company || items[index].company || 'DBB',
           updated_at: now,
         }
@@ -172,7 +225,7 @@ export class LocalStorageService {
     const newItem: VaultItem = {
       id: item.id || `item_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       type: item.type,
-      name: item.name,
+      name: resolvedName,
       category: item.category || 'General',
       favorite: !!item.favorite,
       tags: item.tags || [],
@@ -270,12 +323,27 @@ export class LocalStorageService {
       // Note
       content: item.content || '',
 
-      // Identity
+      // Identity / Employee specific
       full_name: item.full_name || '',
       position: item.position || '',
+      contract: item.contract || 'Regular',
+      status: item.status || 'Active',
+      sss_no: item.sss_no || '',
+      hdmf_no: item.hdmf_no || item.pagibig_no || '',
+      pagibig_no: item.pagibig_no || item.hdmf_no || '',
+      phic_no: item.phic_no || item.philhealth_no || '',
+      philhealth_no: item.philhealth_no || item.phic_no || '',
+      tin_no: item.tin_no || '',
+      birthdate: item.birthdate || '',
+      address: item.address || item.office_address || '',
+      office_address: item.office_address || item.address || '',
+      dmbb_id: item.dmbb_id || item.employee_id || '',
+      employee_id: item.employee_id || item.dmbb_id || '',
+      contact_no: item.contact_no || item.work_phone || item.phone || '',
+      work_phone: item.work_phone || item.contact_no || item.phone || '',
+      phone: item.phone || item.contact_no || '',
       work_email: item.work_email || '',
-      work_phone: item.work_phone || '',
-      office_address: item.office_address || '',
+      emergency_contact: item.emergency_contact || '',
     }
 
     items.unshift(newItem)

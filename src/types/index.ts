@@ -117,14 +117,31 @@ export interface VaultItem {
   // Note specific
   content?: string
 
-  // Identity specific
+  // Identity / Employee specific
   full_name?: string
   position?: string
-  work_email?: string
+  department?: string
+  contract?: string
+  status?: string
+  sss_no?: string
+  hdmf_no?: string
+  pagibig_no?: string
+  phic_no?: string
+  philhealth_no?: string
+  tin_no?: string
+  birthdate?: string
+  address?: string
+  office_address?: string
+  dmbb_id?: string
+  employee_id?: string
+  contact_no?: string
   work_phone?: string
   phone?: string
-  office_address?: string
+  work_email?: string
+  emergency_contact?: string
 }
+
+export * from './employee'
 
 export type VaultNavFilter =
   | 'dashboard'

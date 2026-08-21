@@ -5,6 +5,7 @@ import { useVault } from '@/composables/useVault'
 import { useClipboard } from '@/composables/useClipboard'
 import { useToast } from '@/composables/useToast'
 import { calculatePasswordStrength } from '@/services/crypto'
+import { formatDate, formatDateTime, formatPhilippinePhone } from '@/lib/dateUtils'
 import CredentialTypeIcon from './CredentialTypeIcon.vue'
 import {
   Star,
@@ -26,6 +27,7 @@ import {
   Building2,
   KeyRound,
   AlertTriangle,
+  Phone,
 } from '@lucide/vue'
 
 const props = defineProps<{
@@ -67,6 +69,7 @@ const expirationWarning = computed(() => {
     daysRemaining: diffDays,
     isExpired: diffDays <= 0,
     isUrgent: diffDays <= 30,
+    formattedDate: formatDate(props.item.expiration_date),
   }
 })
 
@@ -95,22 +98,6 @@ function handleTrash() {
   moveToTrash(props.item.id)
   emit('delete', props.item.id)
   success('Moved to Trash', `"${props.item.name}" moved to trash.`)
-}
-
-function formatDate(iso: string) {
-  if (!iso) return 'N/A'
-  try {
-    const d = new Date(iso)
-    return d.toLocaleDateString(undefined, {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    })
-  } catch {
-    return iso
-  }
 }
 </script>
 
@@ -332,14 +319,29 @@ function formatDate(iso: string) {
           </div>
         </div>
 
-        <div v-if="item.recovery_email" class="p-3.5 rounded-xl border border-border bg-card/60 flex items-center justify-between">
-          <div>
-            <span class="text-[11px] font-medium text-muted-foreground block">Recovery Email</span>
-            <span class="text-sm text-foreground font-mono">{{ item.recovery_email }}</span>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div v-if="item.recovery_email" class="p-3.5 rounded-xl border border-border bg-card/60 flex items-center justify-between">
+            <div>
+              <span class="text-[11px] font-medium text-muted-foreground block">Recovery Email</span>
+              <span class="text-sm text-foreground font-mono">{{ item.recovery_email }}</span>
+            </div>
+            <button @click="copyValue(item.recovery_email, 'Recovery Email', 'rec_email', false)" class="text-muted-foreground hover:text-foreground">
+              <Copy class="w-4 h-4" />
+            </button>
           </div>
-          <button @click="copyValue(item.recovery_email, 'Recovery Email', 'rec_email', false)" class="text-muted-foreground hover:text-foreground">
-            <Copy class="w-4 h-4" />
-          </button>
+
+          <div v-if="item.recovery_phone" class="p-3.5 rounded-xl border border-border bg-card/60 flex items-center justify-between">
+            <div>
+              <span class="text-[11px] font-medium text-muted-foreground block">Recovery Phone (PH)</span>
+              <a :href="`tel:${item.recovery_phone}`" class="text-sm font-semibold text-primary hover:underline flex items-center gap-1.5 mt-0.5">
+                <Phone class="w-3.5 h-3.5" />
+                <span>{{ formatPhilippinePhone(item.recovery_phone) }}</span>
+              </a>
+            </div>
+            <button @click="copyValue(item.recovery_phone, 'Recovery Phone', 'rec_phone', false)" class="text-muted-foreground hover:text-foreground">
+              <Copy class="w-4 h-4" />
+            </button>
+          </div>
         </div>
       </div>
 
@@ -571,12 +573,12 @@ function formatDate(iso: string) {
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div v-if="item.registration_date" class="p-3.5 rounded-xl border border-border bg-card/60">
             <span class="text-[11px] font-medium text-muted-foreground block">Registration Date</span>
-            <span class="text-sm font-medium text-foreground">{{ item.registration_date }}</span>
+            <span class="text-sm font-medium text-foreground">{{ formatDate(item.registration_date) }}</span>
           </div>
 
           <div v-if="item.expiration_date" class="p-3.5 rounded-xl border border-border bg-card/60">
             <span class="text-[11px] font-medium text-muted-foreground block">Expiration Date</span>
-            <span class="text-sm font-semibold text-foreground">{{ item.expiration_date }}</span>
+            <span class="text-sm font-semibold text-foreground">{{ formatDate(item.expiration_date) }}</span>
           </div>
 
           <div class="p-3.5 rounded-xl border border-border bg-card/60">
@@ -681,7 +683,7 @@ function formatDate(iso: string) {
           </div>
           <div v-if="item.expiration_date" class="p-3.5 rounded-xl border border-border bg-card/60">
             <span class="text-[11px] font-medium text-muted-foreground block">Expiration Date</span>
-            <span class="text-sm font-semibold text-foreground">{{ item.expiration_date }}</span>
+            <span class="text-sm font-semibold text-foreground">{{ formatDate(item.expiration_date) }}</span>
           </div>
         </div>
       </div>
@@ -707,28 +709,140 @@ function formatDate(iso: string) {
       </div>
 
       <!-- ================= 12. EMPLOYEE IDENTITY VIEW ================= -->
-      <div v-else-if="item.type === 'identity'" class="space-y-3">
+      <div v-else-if="item.type === 'identity'" class="space-y-4">
+        <!-- Main Profile Banner -->
+        <div class="p-4 rounded-xl border border-border bg-card/80 space-y-3">
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <span class="text-[11px] font-medium text-muted-foreground block">Employee's Full Name</span>
+              <h3 class="text-base font-bold text-foreground mt-0.5">{{ item.full_name || item.name }}</h3>
+              <p class="text-xs text-muted-foreground mt-0.5">
+                <span>{{ item.position || 'Staff Member' }}</span>
+                <span v-if="item.department" class="text-muted-foreground/60"> • </span>
+                <span v-if="item.department" class="font-medium text-foreground">{{ item.department }}</span>
+              </p>
+            </div>
+
+            <div class="flex items-center gap-2 flex-wrap justify-end">
+              <span
+                v-if="item.dmbb_id || item.employee_id"
+                class="px-2.5 py-1 rounded-lg text-xs font-mono font-bold bg-primary/10 text-primary border border-primary/20"
+              >
+                ID: {{ item.dmbb_id || item.employee_id }}
+              </span>
+              <span
+                class="px-2.5 py-1 rounded-lg text-xs font-semibold"
+                :class="
+                  (item.status || 'Active').toLowerCase() === 'active'
+                    ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20'
+                    : 'bg-zinc-500/10 text-zinc-400 border border-zinc-500/20'
+                "
+              >
+                {{ item.status || 'Active' }}
+              </span>
+              <span
+                v-if="item.contract"
+                class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-blue-500/10 text-blue-600 border border-blue-500/20"
+              >
+                {{ item.contract }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Philippine Government Numbers -->
+        <div class="p-4 rounded-xl border border-border bg-card/60 space-y-3">
+          <h4 class="text-xs font-bold text-foreground uppercase tracking-wider">Philippine Government Identification</h4>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div class="p-3 rounded-lg border border-border/80 bg-background/50 flex items-center justify-between">
+              <div>
+                <span class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block">SSS No.</span>
+                <span class="text-xs font-mono font-bold text-foreground">{{ item.sss_no || '—' }}</span>
+              </div>
+              <button
+                v-if="item.sss_no"
+                @click="copyValue(item.sss_no, 'SSS No.', 'id_sss', false)"
+                class="p-1.5 text-muted-foreground hover:text-foreground rounded hover:bg-muted"
+                title="Copy SSS No."
+              >
+                <Check v-if="copiedField === 'id_sss'" class="w-3.5 h-3.5 text-emerald-600" />
+                <Copy v-else class="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            <div class="p-3 rounded-lg border border-border/80 bg-background/50 flex items-center justify-between">
+              <div>
+                <span class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block">HDMF / Pag-IBIG No.</span>
+                <span class="text-xs font-mono font-bold text-foreground">{{ item.hdmf_no || item.pagibig_no || '—' }}</span>
+              </div>
+              <button
+                v-if="item.hdmf_no || item.pagibig_no"
+                @click="copyValue(item.hdmf_no || item.pagibig_no, 'HDMF No.', 'id_hdmf', false)"
+                class="p-1.5 text-muted-foreground hover:text-foreground rounded hover:bg-muted"
+                title="Copy HDMF No."
+              >
+                <Check v-if="copiedField === 'id_hdmf'" class="w-3.5 h-3.5 text-emerald-600" />
+                <Copy v-else class="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            <div class="p-3 rounded-lg border border-border/80 bg-background/50 flex items-center justify-between">
+              <div>
+                <span class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block">PHIC / PhilHealth No.</span>
+                <span class="text-xs font-mono font-bold text-foreground">{{ item.phic_no || item.philhealth_no || '—' }}</span>
+              </div>
+              <button
+                v-if="item.phic_no || item.philhealth_no"
+                @click="copyValue(item.phic_no || item.philhealth_no, 'PHIC No.', 'id_phic', false)"
+                class="p-1.5 text-muted-foreground hover:text-foreground rounded hover:bg-muted"
+                title="Copy PHIC No."
+              >
+                <Check v-if="copiedField === 'id_phic'" class="w-3.5 h-3.5 text-emerald-600" />
+                <Copy v-else class="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            <div class="p-3 rounded-lg border border-border/80 bg-background/50 flex items-center justify-between">
+              <div>
+                <span class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block">TIN No.</span>
+                <span class="text-xs font-mono font-bold text-foreground">{{ item.tin_no || '—' }}</span>
+              </div>
+              <button
+                v-if="item.tin_no"
+                @click="copyValue(item.tin_no, 'TIN No.', 'id_tin', false)"
+                class="p-1.5 text-muted-foreground hover:text-foreground rounded hover:bg-muted"
+                title="Copy TIN No."
+              >
+                <Check v-if="copiedField === 'id_tin'" class="w-3.5 h-3.5 text-emerald-600" />
+                <Copy v-else class="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Contact & Emergency & Personal Details -->
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div v-if="item.full_name" class="p-3.5 rounded-xl border border-border bg-card/60">
-            <span class="text-[11px] font-medium text-muted-foreground block">Full Name</span>
-            <div class="flex justify-between items-center mt-0.5">
-              <span class="text-sm font-semibold text-foreground">{{ item.full_name }}</span>
-              <button @click="copyValue(item.full_name, 'Full Name', 'id_name', false)" class="text-muted-foreground hover:text-foreground">
+          <div v-if="item.contact_no || item.work_phone || item.phone" class="p-3.5 rounded-xl border border-border bg-card/60">
+            <span class="text-[11px] font-medium text-muted-foreground block">Contact Number</span>
+            <div class="flex justify-between items-center mt-1">
+              <a :href="`tel:${item.contact_no || item.work_phone || item.phone}`" class="text-sm font-semibold text-primary hover:underline flex items-center gap-1.5">
+                <Phone class="w-3.5 h-3.5" />
+                <span>{{ formatPhilippinePhone(item.contact_no || item.work_phone || item.phone) }}</span>
+              </a>
+              <button @click="copyValue(item.contact_no || item.work_phone || item.phone, 'Contact Number', 'id_wphone', false)" class="text-muted-foreground hover:text-foreground">
                 <Copy class="w-3.5 h-3.5" />
               </button>
             </div>
           </div>
 
-          <div v-if="item.position" class="p-3.5 rounded-xl border border-border bg-card/60">
-            <span class="text-[11px] font-medium text-muted-foreground block">Position / Title</span>
-            <span class="text-sm font-semibold text-foreground block mt-0.5">{{ item.position }}</span>
+          <div v-if="item.birthdate" class="p-3.5 rounded-xl border border-border bg-card/60">
+            <span class="text-[11px] font-medium text-muted-foreground block">Birthdate</span>
+            <span class="text-sm font-semibold text-foreground block mt-1">{{ item.birthdate }}</span>
           </div>
-        </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div v-if="item.work_email || item.email" class="p-3.5 rounded-xl border border-border bg-card/60">
             <span class="text-[11px] font-medium text-muted-foreground block">Work Email</span>
-            <div class="flex justify-between items-center mt-0.5">
+            <div class="flex justify-between items-center mt-1">
               <span class="text-sm font-semibold text-foreground font-mono truncate">{{ item.work_email || item.email }}</span>
               <button @click="copyValue(item.work_email || item.email, 'Work Email', 'id_wemail', false)" class="text-muted-foreground hover:text-foreground shrink-0">
                 <Copy class="w-3.5 h-3.5" />
@@ -736,20 +850,15 @@ function formatDate(iso: string) {
             </div>
           </div>
 
-          <div v-if="item.work_phone || item.phone" class="p-3.5 rounded-xl border border-border bg-card/60">
-            <span class="text-[11px] font-medium text-muted-foreground block">Work Phone</span>
-            <div class="flex justify-between items-center mt-0.5">
-              <span class="text-sm font-semibold text-foreground">{{ item.work_phone || item.phone }}</span>
-              <button @click="copyValue(item.work_phone || item.phone, 'Work Phone', 'id_wphone', false)" class="text-muted-foreground hover:text-foreground">
-                <Copy class="w-3.5 h-3.5" />
-              </button>
-            </div>
+          <div v-if="item.emergency_contact" class="p-3.5 rounded-xl border border-border bg-card/60">
+            <span class="text-[11px] font-medium text-muted-foreground block">In Case of Emergency (ICE)</span>
+            <span class="text-sm font-semibold text-foreground block mt-1">{{ item.emergency_contact }}</span>
           </div>
         </div>
 
-        <div v-if="item.office_address" class="p-3.5 rounded-xl border border-border bg-card/60">
-          <span class="text-[11px] font-medium text-muted-foreground block">Office Location</span>
-          <span class="text-sm text-foreground block mt-0.5">{{ item.office_address }}</span>
+        <div v-if="item.address || item.office_address" class="p-3.5 rounded-xl border border-border bg-card/60">
+          <span class="text-[11px] font-medium text-muted-foreground block">Address</span>
+          <span class="text-sm text-foreground block mt-0.5">{{ item.address || item.office_address }}</span>
         </div>
       </div>
 
@@ -868,11 +977,11 @@ function formatDate(iso: string) {
       <div class="pt-4 border-t border-border grid grid-cols-2 gap-4 text-[11px] text-muted-foreground">
         <div class="flex items-center gap-1.5">
           <Calendar class="w-3.5 h-3.5" />
-          <span>Created: {{ formatDate(item.created_at) }}</span>
+          <span>Created: {{ formatDateTime(item.created_at) }}</span>
         </div>
         <div class="flex items-center gap-1.5">
           <Clock class="w-3.5 h-3.5" />
-          <span>Modified: {{ formatDate(item.updated_at) }}</span>
+          <span>Modified: {{ formatDateTime(item.updated_at) }}</span>
         </div>
       </div>
     </div>
