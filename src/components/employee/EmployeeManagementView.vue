@@ -17,7 +17,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import {
-  Users,
+  UsersRound,
   Plus,
   Upload,
   Download,
@@ -35,7 +35,7 @@ import {
   Table as TableIcon,
   Columns,
   X,
-  UserCheck,
+  UserRoundCheck,
 } from '@lucide/vue'
 
 const emit = defineEmits<{
@@ -201,14 +201,14 @@ function onImportSuccess(updated: VaultItem[]) {
 </script>
 
 <template>
-  <div class="h-full flex flex-col bg-background overflow-hidden min-w-0">
+  <div class="h-full flex flex-col bg-background overflow-hidden min-w-0" style="width: -webkit-fill-available;">
     <!-- Top Action & Metrics Header -->
     <div class="p-4 sm:p-5 border-b border-border bg-card/60 space-y-4 shrink-0">
       <!-- Title & Action Buttons -->
       <div class="flex items-center justify-between gap-3 flex-wrap">
         <div class="flex items-center gap-3">
           <div class="p-2.5 rounded-2xl bg-primary/10 text-primary shrink-0">
-            <Users class="w-6 h-6" />
+            <UsersRound class="w-6 h-6" />
           </div>
           <div>
             <div class="flex items-center gap-2">
@@ -261,7 +261,7 @@ function onImportSuccess(updated: VaultItem[]) {
             <span class="text-[10px] uppercase font-bold tracking-wider text-muted-foreground block">Active Staff</span>
             <span class="text-base font-bold text-emerald-600">{{ stats.active }}</span>
           </div>
-          <UserCheck class="w-4 h-4 text-emerald-600/60" />
+          <UserRoundCheck class="w-4 h-4 text-emerald-600/60" />
         </div>
 
         <div class="p-3 rounded-xl border border-border bg-card/60 flex items-center justify-between">
@@ -300,7 +300,7 @@ function onImportSuccess(updated: VaultItem[]) {
             v-model="searchQuery"
             type="text"
             placeholder="Search by name, DMBB ID, SSS, TIN, phone, department..."
-            class="w-full h-6 pl-8 pr-8 py-1.5 text-xs rounded-xl border border-input bg-card/60 focus:bg-card focus:outline-none focus:ring-2 focus:ring-primary/30"
+            class="w-full h-9.5 pl-8 pr-8 py-1.5 text-xs rounded-xl border border-input bg-card/60 focus:bg-card focus:outline-none focus:ring-2 focus:ring-primary/30"
           />
           <button
             v-if="searchQuery"
@@ -436,14 +436,14 @@ function onImportSuccess(updated: VaultItem[]) {
     </div>
 
     <!-- Main Content Container -->
-    <div class="flex-1 overflow-hidden flex min-h-0">
+    <div class="flex-1 min-h-0 min-w-0 w-full flex overflow-hidden">
       <!-- Empty State -->
       <div
         v-if="filteredEmployees.length === 0"
         class="flex-1 p-8 flex flex-col items-center justify-center text-center text-muted-foreground space-y-3"
       >
         <div class="p-4 rounded-2xl bg-muted/60 text-muted-foreground">
-          <Users class="w-8 h-8 text-muted-foreground/60" />
+          <UsersRound class="w-8 h-8 text-muted-foreground/60" />
         </div>
         <div>
           <h3 class="text-sm font-semibold text-foreground">No Employee Records Found</h3>
@@ -470,9 +470,9 @@ function onImportSuccess(updated: VaultItem[]) {
       <!-- ================= 1. TABLE VIEW ================= -->
       <div
         v-else-if="viewMode === 'table'"
-        class="flex-1 overflow-y-auto"
+        class="flex-1 min-w-0 min-h-0 overflow-auto"
       >
-        <table class="w-full text-xs text-left border-collapse">
+        <table class="w-full min-w-[1100px] text-xs text-left border-collapse">
           <thead class="sticky top-0 bg-muted/90 backdrop-blur-xs z-10 border-b border-border text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
             <tr>
               <th class="py-2.5 px-3 w-10 text-center">
@@ -662,110 +662,112 @@ function onImportSuccess(updated: VaultItem[]) {
       <!-- ================= 2. CARDS GRID VIEW ================= -->
       <div
         v-else-if="viewMode === 'cards'"
-        class="flex-1 p-4 sm:p-5 overflow-y-auto"
+        class="flex-1 min-h-0 min-w-0 w-full overflow-y-auto overflow-x-hidden"
       >
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
-          <div
-            v-for="emp in filteredEmployees"
-            :key="emp.id"
-            class="p-4 rounded-2xl border border-border bg-card hover:border-primary/40 shadow-xs flex flex-col justify-between space-y-3 group"
-          >
-            <!-- Card Top: Name & Badges -->
-            <div class="space-y-2">
-              <div class="flex items-start justify-between gap-2">
-                <div>
-                  <h4 class="text-sm font-bold text-foreground hover:text-primary cursor-pointer" @click="emit('edit-employee', emp)">
-                    {{ emp.full_name || emp.name }}
-                  </h4>
-                  <p class="text-xs text-muted-foreground">
-                    <span>{{ emp.position || 'Staff Member' }}</span>
-                    <span v-if="emp.department"> • {{ emp.department }}</span>
-                  </p>
+        <div class="w-full p-4 sm:p-5">
+          <div class="grid w-full grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3.5">
+            <div
+              v-for="emp in filteredEmployees"
+              :key="emp.id"
+              class="min-w-0 w-full p-4 rounded-2xl border border-border bg-card hover:border-primary/40 shadow-xs flex flex-col justify-between space-y-3 group"
+            >
+              <!-- Card Top: Name & Badges -->
+              <div class="space-y-2">
+                <div class="flex items-start justify-between gap-2">
+                  <div>
+                    <h4 class="text-sm font-bold text-foreground hover:text-primary cursor-pointer" @click="emit('edit-employee', emp)">
+                      {{ emp.full_name || emp.name }}
+                    </h4>
+                    <p class="text-xs text-muted-foreground">
+                      <span>{{ emp.position || 'Staff Member' }}</span>
+                      <span v-if="emp.department"> • {{ emp.department }}</span>
+                    </p>
+                  </div>
+
+                  <div class="flex items-center gap-1">
+                    <span
+                      v-if="emp.dmbb_id || emp.employee_id"
+                      class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-primary/10 text-primary border border-primary/20"
+                    >
+                      {{ emp.dmbb_id || emp.employee_id }}
+                    </span>
+                    <button
+                      @click="toggleFavorite(emp.id)"
+                      class="p-1 text-muted-foreground hover:text-amber-500 rounded"
+                    >
+                      <Star class="w-3.5 h-3.5" :class="{ 'fill-amber-500 text-amber-500': emp.favorite }" />
+                    </button>
+                  </div>
                 </div>
+
+                <!-- Contract / Status -->
+                <div class="flex items-center gap-1.5 flex-wrap">
+                  <span
+                    class="px-2 py-0.5 rounded-md text-[10px] font-bold"
+                    :class="
+                      (emp.status || 'Active').toLowerCase() === 'active'
+                        ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20'
+                        : 'bg-zinc-500/10 text-zinc-400 border border-zinc-500/20'
+                    "
+                  >
+                    {{ emp.status || 'Active' }}
+                  </span>
+                  <span
+                    v-if="emp.contract"
+                    class="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-blue-500/10 text-blue-600 border border-blue-500/20"
+                  >
+                    {{ emp.contract }}
+                  </span>
+                </div>
+              </div>
+
+              <!-- Government IDs List -->
+              <div class="p-2.5 rounded-xl border border-border/80 bg-muted/20 text-[11px] font-mono space-y-1">
+                <div v-if="emp.sss_no" class="flex justify-between items-center text-muted-foreground">
+                  <span class="text-[10px] uppercase font-sans font-semibold">SSS</span>
+                  <span class="text-foreground">{{ emp.sss_no }}</span>
+                </div>
+                <div v-if="emp.tin_no" class="flex justify-between items-center text-muted-foreground">
+                  <span class="text-[10px] uppercase font-sans font-semibold">TIN</span>
+                  <span class="text-foreground">{{ emp.tin_no }}</span>
+                </div>
+                <div v-if="emp.hdmf_no || emp.pagibig_no" class="flex justify-between items-center text-muted-foreground">
+                  <span class="text-[10px] uppercase font-sans font-semibold">HDMF</span>
+                  <span class="text-foreground">{{ emp.hdmf_no || emp.pagibig_no }}</span>
+                </div>
+                <div v-if="!emp.sss_no && !emp.tin_no && !emp.hdmf_no" class="text-muted-foreground/50 italic text-[10px]">
+                  No government IDs on file
+                </div>
+              </div>
+
+              <!-- Card Bottom Actions -->
+              <div class="pt-2 border-t border-border flex items-center justify-between text-xs">
+                <a
+                  v-if="emp.contact_no || emp.work_phone || emp.phone"
+                  :href="`tel:${emp.contact_no || emp.work_phone || emp.phone}`"
+                  class="text-primary hover:underline flex items-center gap-1 font-mono text-[11px]"
+                >
+                  <Phone class="w-3 h-3" />
+                  <span>{{ formatPhilippinePhone(emp.contact_no || emp.work_phone || emp.phone) }}</span>
+                </a>
+                <span v-else class="text-muted-foreground/40 italic text-[11px]">No contact no.</span>
 
                 <div class="flex items-center gap-1">
-                  <span
-                    v-if="emp.dmbb_id || emp.employee_id"
-                    class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-primary/10 text-primary border border-primary/20"
-                  >
-                    {{ emp.dmbb_id || emp.employee_id }}
-                  </span>
                   <button
-                    @click="toggleFavorite(emp.id)"
-                    class="p-1 text-muted-foreground hover:text-amber-500 rounded"
+                    @click="emit('edit-employee', emp)"
+                    class="p-1 text-muted-foreground hover:text-foreground rounded hover:bg-muted"
+                    title="Edit"
                   >
-                    <Star class="w-3.5 h-3.5" :class="{ 'fill-amber-500 text-amber-500': emp.favorite }" />
+                    <Edit class="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    @click="moveToTrash(emp.id)"
+                    class="p-1 text-muted-foreground hover:text-rose-600 rounded hover:bg-rose-500/10"
+                    title="Move to trash"
+                  >
+                    <Trash2 class="w-3.5 h-3.5" />
                   </button>
                 </div>
-              </div>
-
-              <!-- Contract / Status -->
-              <div class="flex items-center gap-1.5 flex-wrap">
-                <span
-                  class="px-2 py-0.5 rounded-md text-[10px] font-bold"
-                  :class="
-                    (emp.status || 'Active').toLowerCase() === 'active'
-                      ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20'
-                      : 'bg-zinc-500/10 text-zinc-400 border border-zinc-500/20'
-                  "
-                >
-                  {{ emp.status || 'Active' }}
-                </span>
-                <span
-                  v-if="emp.contract"
-                  class="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-blue-500/10 text-blue-600 border border-blue-500/20"
-                >
-                  {{ emp.contract }}
-                </span>
-              </div>
-            </div>
-
-            <!-- Government IDs List -->
-            <div class="p-2.5 rounded-xl border border-border/80 bg-muted/20 text-[11px] font-mono space-y-1">
-              <div v-if="emp.sss_no" class="flex justify-between items-center text-muted-foreground">
-                <span class="text-[10px] uppercase font-sans font-semibold">SSS</span>
-                <span class="text-foreground">{{ emp.sss_no }}</span>
-              </div>
-              <div v-if="emp.tin_no" class="flex justify-between items-center text-muted-foreground">
-                <span class="text-[10px] uppercase font-sans font-semibold">TIN</span>
-                <span class="text-foreground">{{ emp.tin_no }}</span>
-              </div>
-              <div v-if="emp.hdmf_no || emp.pagibig_no" class="flex justify-between items-center text-muted-foreground">
-                <span class="text-[10px] uppercase font-sans font-semibold">HDMF</span>
-                <span class="text-foreground">{{ emp.hdmf_no || emp.pagibig_no }}</span>
-              </div>
-              <div v-if="!emp.sss_no && !emp.tin_no && !emp.hdmf_no" class="text-muted-foreground/50 italic text-[10px]">
-                No government IDs on file
-              </div>
-            </div>
-
-            <!-- Card Bottom Actions -->
-            <div class="pt-2 border-t border-border flex items-center justify-between text-xs">
-              <a
-                v-if="emp.contact_no || emp.work_phone || emp.phone"
-                :href="`tel:${emp.contact_no || emp.work_phone || emp.phone}`"
-                class="text-primary hover:underline flex items-center gap-1 font-mono text-[11px]"
-              >
-                <Phone class="w-3 h-3" />
-                <span>{{ formatPhilippinePhone(emp.contact_no || emp.work_phone || emp.phone) }}</span>
-              </a>
-              <span v-else class="text-muted-foreground/40 italic text-[11px]">No contact no.</span>
-
-              <div class="flex items-center gap-1">
-                <button
-                  @click="emit('edit-employee', emp)"
-                  class="p-1 text-muted-foreground hover:text-foreground rounded hover:bg-muted"
-                  title="Edit"
-                >
-                  <Edit class="w-3.5 h-3.5" />
-                </button>
-                <button
-                  @click="moveToTrash(emp.id)"
-                  class="p-1 text-muted-foreground hover:text-rose-600 rounded hover:bg-rose-500/10"
-                  title="Move to trash"
-                >
-                  <Trash2 class="w-3.5 h-3.5" />
-                </button>
               </div>
             </div>
           </div>
@@ -775,10 +777,12 @@ function onImportSuccess(updated: VaultItem[]) {
       <!-- ================= 3. SPLIT MASTER-DETAIL VIEW ================= -->
       <div
         v-else-if="viewMode === 'split'"
-        class="flex-1 flex overflow-hidden min-h-0"
+        class="flex flex-1 min-h-0 min-w-0 overflow-hidden"
       >
         <!-- Left List -->
-        <div class="w-80 lg:w-96 border-r border-border bg-card/40 flex flex-col h-full overflow-hidden shrink-0">
+        <div
+          class="w-72 lg:w-80 xl:w-96 shrink-0 border-r border-border bg-card/40 flex flex-col h-full overflow-hidden"
+        >
           <div class="p-2.5 border-b border-border bg-muted/20 text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center justify-between">
             <span>Staff Roster</span>
             <span>{{ filteredEmployees.length }}</span>
@@ -812,7 +816,7 @@ function onImportSuccess(updated: VaultItem[]) {
         </div>
 
         <!-- Right Detail Pane -->
-        <div class="flex-1 h-full min-w-0 overflow-hidden bg-card">
+        <div class="flex-1 w-full h-full min-w-0 overflow-auto bg-card">
           <ItemDetails
             :item="selectedItem"
             @edit="(item) => emit('edit-employee', item)"

@@ -4,7 +4,7 @@ import type { VaultItemType } from '@/types'
 import {
   KeyRound,
   Mail,
-  Users,
+  UsersRound,
   Building2,
   Monitor,
   Server,
@@ -13,7 +13,7 @@ import {
   Cloud,
   FileKey,
   FileText,
-  Contact,
+  ContactRound,
   Folder,
 } from '@lucide/vue'
 
@@ -52,7 +52,7 @@ const iconComponent = computed(() => {
     case 'email_account':
       return Mail
     case 'social_account':
-      return Users
+      return UsersRound
     case 'company_account':
       return Building2
     case 'pc_computer':
@@ -70,7 +70,7 @@ const iconComponent = computed(() => {
     case 'note':
       return FileText
     case 'identity':
-      return Contact
+      return ContactRound
     default:
       return Folder
   }
