@@ -29,6 +29,14 @@ import {
   Check,
 } from '@lucide/vue'
 
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+
 const { lock } = useAuth()
 const { copyToClipboard } = useClipboard()
 const {
@@ -325,38 +333,98 @@ const currentViewTitle = computed(() => {
 
                 <!-- Sort dropdown -->
                 <div class="flex items-center gap-1">
-                  <select
-                    v-model="sortBy"
-                    class="text-[11px] font-medium bg-muted/50 border border-border rounded px-1.5 py-0.5 text-muted-foreground hover:text-foreground focus:outline-none"
-                  >
-                    <option value="updated_desc">Recently Modified</option>
-                    <option value="created_desc">Recently Created</option>
-                    <option value="name_asc">Name (A-Z)</option>
-                    <option value="name_desc">Name (Z-A)</option>
-                    <option value="updated_asc">Oldest Modified</option>
-                  </select>
+                  <Select v-model="sortBy">
+                    <SelectTrigger
+                      class="h-7 w-[145px] text-xs font-medium bg-muted/50 text-muted-foreground hover:text-foreground"
+                    >
+                      <SelectValue placeholder="Sort by" />
+                    </SelectTrigger>
+                    
+                    <SelectContent>
+                      <SelectItem value="updated_desc" class="text-xs">
+                        Recently Modified
+                      </SelectItem>
+                      <SelectItem value="created_desc" class="text-xs">
+                        Recently Created
+                      </SelectItem>
+                      <SelectItem value="name_asc" class="text-xs">
+                        Name (A-Z)
+                      </SelectItem>
+                      <SelectItem value="name_desc" class="text-xs">
+                        Name (Z-A)
+                      </SelectItem>
+                      <SelectItem value="updated_asc" class="text-xs">
+                        Oldest Modified
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
 
               <!-- Quick Company / Dept Filters if multiple exist -->
-              <div v-if="companies.length > 1 || departments.length > 1" class="flex items-center gap-1.5 pt-1">
-                <select
+              <div
+                v-if="companies.length > 1 || departments.length > 1"
+                class="flex items-center gap-1.5 pt-1"
+              >
+                <!-- Company -->
+                <Select
                   v-if="companies.length > 1"
-                  v-model="selectedCompany"
-                  class="flex-1 text-[10px] bg-muted/40 border border-border rounded px-1.5 py-1 text-muted-foreground focus:outline-none"
+                  :model-value="selectedCompany ?? '__all_companies__'"
+                  @update:model-value="
+                    selectedCompany = $event === '__all_companies__' ? null : String($event)
+                  "
                 >
-                  <option :value="null">All Companies</option>
-                  <option v-for="c in companies" :key="c" :value="c">{{ c }}</option>
-                </select>
+                  <SelectTrigger
+                    class="h-7 flex-1 text-xs bg-muted/40"
+                  >
+                    <SelectValue placeholder="All Companies" />
+                  </SelectTrigger>
 
-                <select
+                  <SelectContent>
+                    <SelectItem value="__all_companies__" class="text-xs">
+                      All Companies
+                    </SelectItem>
+
+                    <SelectItem
+                      v-for="c in companies"
+                      :key="c"
+                      :value="c"
+                      class="text-xs"
+                    >
+                      {{ c }}
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <!-- Department -->
+                <Select
                   v-if="departments.length > 1"
-                  v-model="selectedDepartment"
-                  class="flex-1 text-[10px] bg-muted/40 border border-border rounded px-1.5 py-1 text-muted-foreground focus:outline-none"
+                  :model-value="selectedDepartment ?? '__all_departments__'"
+                  @update:model-value="
+                    selectedDepartment = $event === '__all_departments__' ? null : String($event)
+                  "
                 >
-                  <option :value="null">All Departments</option>
-                  <option v-for="d in departments" :key="d" :value="d">{{ d }}</option>
-                </select>
+                  <SelectTrigger
+                    class="h-7 flex-1 text-xs bg-muted/40"
+                  >
+                    <SelectValue placeholder="All Departments" />
+                  </SelectTrigger>
+
+                  <SelectContent>
+                    <SelectItem value="__all_departments__" class="text-xs">
+                      All Departments
+                    </SelectItem>
+
+                    <SelectItem
+                      v-for="d in departments"
+                      :key="d"
+                      :value="d"
+                      class="text-xs"
+                    >
+                      {{ d }}
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 

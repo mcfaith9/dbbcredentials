@@ -156,7 +156,7 @@ async function handleLogin() {
           >
             <Lock v-if="!isLoading" class="w-4 h-4" />
             <span v-if="isLoading">Verifying Local Credentials...</span>
-            <span v-else>Sign In</span>
+            <span v-else>Unlock</span>
           </button>
         </form>
       </div>

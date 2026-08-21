@@ -5,10 +5,17 @@ import { useVault } from '@/composables/useVault'
 import { useToast } from '@/composables/useToast'
 import { useClipboard } from '@/composables/useClipboard'
 import { formatPhilippinePhone } from '@/lib/dateUtils'
-import { downloadEmployeeTemplate } from '@/services/employeeService'
 import EmployeeImportModal from './EmployeeImportModal.vue'
 import EmployeeExportModal from './EmployeeExportModal.vue'
 import ItemDetails from '@/components/vault/ItemDetails.vue'
+import { Checkbox } from '@/components/ui/checkbox'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import {
   Users,
   Plus,
@@ -293,7 +300,7 @@ function onImportSuccess(updated: VaultItem[]) {
             v-model="searchQuery"
             type="text"
             placeholder="Search by name, DMBB ID, SSS, TIN, phone, department..."
-            class="w-full pl-8 pr-8 py-1.5 text-xs rounded-xl border border-input bg-card/60 focus:bg-card focus:outline-none focus:ring-2 focus:ring-primary/30"
+            class="w-full h-6 pl-8 pr-8 py-1.5 text-xs rounded-xl border border-input bg-card/60 focus:bg-card focus:outline-none focus:ring-2 focus:ring-primary/30"
           />
           <button
             v-if="searchQuery"
@@ -305,40 +312,69 @@ function onImportSuccess(updated: VaultItem[]) {
         </div>
 
         <!-- Department Filter -->
-        <select
-          v-model="selectedDepartment"
-          class="text-xs px-2.5 py-1.5 rounded-xl border border-input bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
-        >
-          <option value="all">All Departments</option>
-          <option v-for="d in departmentsList" :key="d" :value="d">{{ d }}</option>
-        </select>
+        <Select v-model="selectedDepartment">
+          <SelectTrigger
+            class="h-6 w-[160px] rounded-xl px-2.5 text-xs bg-card text-foreground"
+          >
+            <SelectValue placeholder="All Departments" />
+          </SelectTrigger>
+
+          <SelectContent>
+            <SelectItem value="all" class="text-xs">
+              All Departments
+            </SelectItem>
+
+            <SelectItem
+              v-for="d in departmentsList"
+              :key="d"
+              :value="d"
+              class="text-xs"
+            >
+              {{ d }}
+            </SelectItem>
+          </SelectContent>
+        </Select>
 
         <!-- Status Filter -->
-        <select
-          v-model="selectedStatus"
-          class="text-xs px-2.5 py-1.5 rounded-xl border border-input bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 hidden sm:block"
-        >
-          <option value="all">All Status</option>
-          <option value="Active">Active</option>
-          <option value="Inactive">Inactive</option>
-          <option value="On Leave">On Leave</option>
-          <option value="Resigned">Resigned</option>
-          <option value="Terminated">Terminated</option>
-        </select>
+        <div class="hidden sm:block">
+          <Select v-model="selectedStatus">
+            <SelectTrigger
+              class="h-6 w-[130px] rounded-xl px-2.5 text-xs bg-card text-foreground"
+            >
+              <SelectValue placeholder="All Status" />
+            </SelectTrigger>
+
+            <SelectContent>
+              <SelectItem value="all" class="text-xs">All Status</SelectItem>
+              <SelectItem value="Active" class="text-xs">Active</SelectItem>
+              <SelectItem value="Inactive" class="text-xs">Inactive</SelectItem>
+              <SelectItem value="On Leave" class="text-xs">On Leave</SelectItem>
+              <SelectItem value="Resigned" class="text-xs">Resigned</SelectItem>
+              <SelectItem value="Terminated" class="text-xs">Terminated</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
 
         <!-- Contract Filter -->
-        <select
-          v-model="selectedContract"
-          class="text-xs px-2.5 py-1.5 rounded-xl border border-input bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 hidden md:block"
-        >
-          <option value="all">All Contracts</option>
-          <option value="Regular">Regular</option>
-          <option value="Probationary">Probationary</option>
-          <option value="Contractual">Contractual</option>
-          <option value="Project-Based">Project-Based</option>
-          <option value="Casual">Casual</option>
-          <option value="Part-Time">Part-Time</option>
-        </select>
+        <div class="hidden md:block">
+          <Select v-model="selectedContract">
+            <SelectTrigger
+              class="h-6 w-[150px] rounded-xl px-2.5 text-xs bg-card text-foreground"
+            >
+              <SelectValue placeholder="All Contracts" />
+            </SelectTrigger>
+
+            <SelectContent>
+              <SelectItem value="all" class="text-xs">All Contracts</SelectItem>
+              <SelectItem value="Regular" class="text-xs">Regular</SelectItem>
+              <SelectItem value="Probationary" class="text-xs">Probationary</SelectItem>
+              <SelectItem value="Contractual" class="text-xs">Contractual</SelectItem>
+              <SelectItem value="Project-Based" class="text-xs">Project-Based</SelectItem>
+              <SelectItem value="Casual" class="text-xs">Casual</SelectItem>
+              <SelectItem value="Part-Time" class="text-xs">Part-Time</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       <!-- Right Controls: View Modes & Batch Selection Actions -->
@@ -440,15 +476,13 @@ function onImportSuccess(updated: VaultItem[]) {
           <thead class="sticky top-0 bg-muted/90 backdrop-blur-xs z-10 border-b border-border text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
             <tr>
               <th class="py-2.5 px-3 w-10 text-center">
-                <input
-                  type="checkbox"
+                <Checkbox
                   :checked="isAllSelected"
                   @change="toggleSelectAll"
-                  class="rounded text-primary focus:ring-primary"
                 />
               </th>
               <th class="py-2.5 px-3">Employee's Name</th>
-              <th class="py-2.5 px-3">DMBB ID No.</th>
+              <th class="py-2.5 px-3">ID No.</th>
               <th class="py-2.5 px-3">Department</th>
               <th class="py-2.5 px-3">Position</th>
               <th class="py-2.5 px-3">Contract & Status</th>
@@ -466,11 +500,9 @@ function onImportSuccess(updated: VaultItem[]) {
             >
               <!-- Checkbox -->
               <td class="py-2.5 px-3 text-center">
-                <input
-                  type="checkbox"
+                <Checkbox 
                   :checked="selectedEmployeeIds.includes(emp.id)"
                   @change="toggleSelect(emp.id)"
-                  class="rounded text-primary focus:ring-primary"
                 />
               </td>
 
@@ -491,8 +523,8 @@ function onImportSuccess(updated: VaultItem[]) {
               </td>
 
               <!-- DMBB ID -->
-              <td class="py-2.5 px-3 font-mono font-medium">
-                <span v-if="emp.dmbb_id || emp.employee_id" class="px-2 py-0.5 rounded-md bg-muted text-foreground text-[11px] border border-border">
+              <td class="py-2.5 px-3 font-mono font-medium w-30">
+                <span v-if="emp.dmbb_id || emp.employee_id" class="px-1.5 text-[10px] py-0.5 rounded bg-muted/60 text-muted-foreground hover:text-foreground cursor-pointer border border-border">
                   {{ emp.dmbb_id || emp.employee_id }}
                 </span>
                 <span v-else class="text-muted-foreground/40 italic">—</span>

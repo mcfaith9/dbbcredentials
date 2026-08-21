@@ -110,6 +110,7 @@ function setupAutoUpdater() {
 function createWindow() {
   win = new BrowserWindow({
     title: 'DBB Credentials Vault',
+    icon: path.join(process.env.VITE_PUBLIC, 'icon1.ico'),
     width: 1000,
     height: 720,
     minWidth: 1000,

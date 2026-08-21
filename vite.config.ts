@@ -48,6 +48,7 @@ export default defineConfig(({ mode }) => {
                     rollupOptions: {
                       output: {
                         format: 'es',
+                        entryFileNames: 'preload.mjs',
                       },
                     },
                   },
