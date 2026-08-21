@@ -1,5 +1,14 @@
 /// <reference types="vite/client" />
 
+export interface ElectronUpdaterAPI {
+  check: () => Promise<any>
+  download: () => Promise<any>
+  install: () => Promise<any>
+  getStatus: () => Promise<any>
+  onStatusChange: (callback: (state: any) => void) => () => void
+  onProgressChange: (callback: (progress: any) => void) => () => void
+}
+
 export interface ElectronAPI {
   isElectron: boolean
   platform: string
@@ -21,6 +30,7 @@ export interface ElectronAPI {
     nodeVersion: string
     appVersion: string
   }>
+  updater?: ElectronUpdaterAPI
 }
 
 declare global {

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
+import { ref, reactive, computed } from 'vue'
 import { useAuth } from '@/composables/useAuth'
 import { useVault } from '@/composables/useVault'
 import { useToast } from '@/composables/useToast'
@@ -21,6 +21,13 @@ import {
   Cpu,
   Bell,
   Terminal,
+  RefreshCw,
+  Sparkles,
+  CheckCircle2,
+  AlertTriangle,
+  ExternalLink,
+  ArrowDownCircle,
+  Package,
 } from '@lucide/vue'
 
 const { lock, changePassword, user } = useAuth()
@@ -30,10 +37,65 @@ const {
   isElectron,
   platform,
   platformInfo,
+  updateState,
+  checkUpdates,
+  downloadUpdate,
+  installUpdate,
   saveFileNative,
   openFileNative,
   sendNotification,
+  openExternal,
 } = useElectron()
+
+const isCheckingUpdates = ref(false)
+const showReleaseNotes = ref(false)
+
+async function handleCheckForUpdates() {
+  isCheckingUpdates.value = true
+  try {
+    const res = await checkUpdates(true)
+    if (res.status === 'available') {
+      success('Update Available', `Version ${res.info?.version || ''} is available for download.`)
+    } else if (res.status === 'not-available') {
+      success('Up to Date', 'You are running the latest version of DBB Credentials Vault.')
+    } else if (res.status === 'error') {
+      error('Update Check Failed', res.error || 'Could not verify latest version.')
+    }
+  } catch (err: any) {
+    error('Update Error', err?.message || 'Failed to check updates')
+  } finally {
+    isCheckingUpdates.value = false
+  }
+}
+
+async function handleDownloadUpdate() {
+  const ok = await downloadUpdate()
+  if (ok && isElectron.value) {
+    success('Downloading Update', 'Update download started in background.')
+  }
+}
+
+async function handleInstallUpdate() {
+  await installUpdate()
+}
+
+function formatBytes(bytes?: number): string {
+  if (!bytes || bytes === 0) return '0 B'
+  const k = 1024
+  const sizes = ['B', 'KB', 'MB', 'GB']
+  const i = Math.floor(Math.log(bytes) / Math.log(k))
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i]
+}
+
+const formattedLastChecked = computed(() => {
+  if (!updateState.value.lastChecked) return 'Never checked'
+  try {
+    const d = new Date(updateState.value.lastChecked)
+    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + ' on ' + d.toLocaleDateString()
+  } catch {
+    return updateState.value.lastChecked
+  }
+})
 
 // Password change form
 const pwdForm = reactive({
@@ -240,6 +302,157 @@ function handleResetVault() {
       accept=".json,.dbb"
       class="hidden"
     />
+
+    <!-- ================= SECTION 0: APPLICATION UPDATES ================= -->
+    <div class="space-y-4">
+      <div class="flex items-center justify-between">
+        <h3 class="text-sm font-bold text-foreground flex items-center gap-2">
+          <RefreshCw class="w-4 h-4 text-primary" />
+          <span>Updates</span>
+        </h3>
+        <div class="flex items-center gap-2">
+          <span class="text-xs font-mono px-2.5 py-0.5 rounded-full bg-primary/10 text-primary font-bold border border-primary/20">
+            v{{ platformInfo.appVersion || updateState.currentVersion }}
+          </span>
+        </div>
+      </div>
+
+      <div class="p-5 rounded-2xl border border-border bg-card space-y-5 shadow-sm">
+        <!-- Main Update Status Row -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div class="flex items-start gap-3.5">
+            <!-- Dynamic Status Icon -->
+            <div
+              class="p-2.5 rounded-xl shrink-0 flex items-center justify-center transition-colors"
+              :class="{
+                'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400': updateState.status === 'not-available' || updateState.status === 'idle' || updateState.status === 'dev-mode',
+                'bg-amber-500/10 text-amber-600 dark:text-amber-400 animate-pulse': updateState.status === 'available',
+                'bg-primary/10 text-primary animate-spin': updateState.status === 'checking',
+                'bg-blue-500/10 text-blue-600 dark:text-blue-400': updateState.status === 'downloading',
+                'bg-emerald-500/20 text-emerald-600 dark:text-emerald-300': updateState.status === 'downloaded',
+                'bg-rose-500/10 text-rose-600 dark:text-rose-400': updateState.status === 'error',
+              }"
+            >
+              <CheckCircle2 v-if="updateState.status === 'not-available' || updateState.status === 'idle' || updateState.status === 'dev-mode'" class="w-5 h-5" />
+              <ArrowDownCircle v-else-if="updateState.status === 'available'" class="w-5 h-5" />
+              <RefreshCw v-else-if="updateState.status === 'checking'" class="w-5 h-5" />
+              <Package v-else-if="updateState.status === 'downloading'" class="w-5 h-5 animate-bounce" />
+              <Sparkles v-else-if="updateState.status === 'downloaded'" class="w-5 h-5" />
+              <AlertTriangle v-else-if="updateState.status === 'error'" class="w-5 h-5" />
+            </div>
+
+            <div class="space-y-1 min-w-0">
+              <div class="flex items-center gap-2 flex-wrap">
+                <h4 class="text-sm font-semibold text-foreground">
+                  <span v-if="updateState.status === 'checking'">Checking for Updates...</span>
+                  <span v-else-if="updateState.status === 'available'">Update Available: {{ updateState.info?.version || 'New Release' }}</span>
+                  <span v-else-if="updateState.status === 'downloading'">Downloading Update...</span>
+                  <span v-else-if="updateState.status === 'downloaded'">Update Downloaded & Ready to Install</span>
+                  <span v-else-if="updateState.status === 'error'">Update Check Encountered an Error</span>
+                  <span v-else>DBB Credentials Vault is Up to Date</span>
+                </h4>
+              </div>
+
+              <p class="text-xs text-muted-foreground">
+                <span v-if="updateState.status === 'checking'">Querying GitHub Releases for new updates...</span>
+                <span v-else-if="updateState.status === 'available'">
+                  A new release is available from the repository ({{ updateState.info?.version || 'latest' }}).
+                </span>
+                <span v-else-if="updateState.status === 'downloading'">
+                  {{ updateState.progress ? `${updateState.progress.percent}% completed (${formatBytes(updateState.progress.transferred)} / ${formatBytes(updateState.progress.total)})` : 'Downloading update package in background...' }}
+                </span>
+                <span v-else-if="updateState.status === 'downloaded'">
+                  Update package is verified. Restart the application to finalize installation.
+                </span>
+                <span v-else-if="updateState.status === 'error'">
+                  {{ updateState.error || 'Failed to connect to update feed.' }}
+                </span>
+                <span v-else>
+                  Current version {{ platformInfo.appVersion || updateState.currentVersion }} is the latest release. Last checked: {{ formattedLastChecked }}.
+                </span>
+              </p>
+            </div>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="flex items-center gap-2 shrink-0 self-start sm:self-center">
+            <!-- Download Button when available -->
+            <button
+              v-if="updateState.status === 'available'"
+              @click="handleDownloadUpdate"
+              class="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition shadow-sm"
+            >
+              <Download class="w-3.5 h-3.5" />
+              <span>Download Update</span>
+            </button>
+
+            <!-- Install Button when downloaded -->
+            <button
+              v-else-if="updateState.status === 'downloaded'"
+              @click="handleInstallUpdate"
+              class="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 transition shadow-sm animate-pulse"
+            >
+              <Sparkles class="w-3.5 h-3.5" />
+              <span>Restart & Install</span>
+            </button>
+
+            <!-- Check for Updates Button -->
+            <button
+              @click="handleCheckForUpdates"
+              :disabled="isCheckingUpdates || updateState.status === 'checking' || updateState.status === 'downloading'"
+              class="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-xl bg-muted hover:bg-muted/80 text-foreground border border-border transition shadow-sm disabled:opacity-50"
+            >
+              <RefreshCw class="w-3.5 h-3.5" :class="{ 'animate-spin': isCheckingUpdates || updateState.status === 'checking' }" />
+              <span>{{ isCheckingUpdates || updateState.status === 'checking' ? 'Checking...' : 'Check for Updates' }}</span>
+            </button>
+
+            <!-- View on GitHub Releases -->
+            <button
+              @click="openExternal('https://github.com/mcfaith9/dbbcredentials/releases')"
+              class="p-2 text-xs rounded-xl bg-muted/60 hover:bg-muted text-muted-foreground hover:text-foreground border border-border transition"
+              title="View all releases on GitHub (mcfaith9/dbbcredentials)"
+            >
+              <ExternalLink class="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+
+        <!-- Download Progress Bar (When Downloading) -->
+        <div v-if="updateState.status === 'downloading' && updateState.progress" class="space-y-1.5 pt-2">
+          <div class="flex items-center justify-between text-xs text-muted-foreground font-mono">
+            <span>Progress: {{ updateState.progress.percent }}%</span>
+            <span>Speed: {{ formatBytes(updateState.progress.bytesPerSecond) }}/s</span>
+          </div>
+          <div class="w-full h-2 rounded-full bg-muted overflow-hidden">
+            <div
+              class="h-full bg-primary transition-all duration-300 rounded-full"
+              :style="{ width: `${updateState.progress.percent}%` }"
+            />
+          </div>
+        </div>
+
+        <!-- Release Notes Accordion if available -->
+        <div v-if="updateState.info?.releaseNotes" class="pt-3 border-t border-border space-y-2">
+          <button
+            @click="showReleaseNotes = !showReleaseNotes"
+            class="flex items-center justify-between w-full text-xs font-semibold text-muted-foreground hover:text-foreground transition"
+          >
+            <span class="flex items-center gap-1.5">
+              <Sparkles class="w-3.5 h-3.5 text-primary" />
+              <span>Release Notes for {{ updateState.info.version || updateState.info.name || 'Latest Version' }}</span>
+            </span>
+            <span class="text-[10px] text-primary underline">{{ showReleaseNotes ? 'Hide Notes' : 'View Notes' }}</span>
+          </button>
+
+          <div
+            v-if="showReleaseNotes"
+            class="p-3.5 rounded-xl bg-muted/40 border border-border/80 text-xs text-foreground space-y-1.5 max-h-48 overflow-y-auto font-mono whitespace-pre-wrap leading-relaxed"
+          >
+            {{ updateState.info.releaseNotes }}
+          </div>
+        </div>
+      </div>
+    </div>
 
     <!-- ================= SECTION 1: SECURITY ================= -->
     <div class="space-y-4">

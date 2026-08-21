@@ -33,6 +33,24 @@ const electronAPI = {
   // System & Platform Info
   getPlatformInfo: () =>
     ipcRenderer.invoke('app:getPlatformInfo'),
+
+  // Auto-Updater API
+  updater: {
+    check: () => ipcRenderer.invoke('updater:check'),
+    download: () => ipcRenderer.invoke('updater:download'),
+    install: () => ipcRenderer.invoke('updater:install'),
+    getStatus: () => ipcRenderer.invoke('updater:getStatus'),
+    onStatusChange: (callback: (state: any) => void) => {
+      const handler = (_event: any, state: any) => callback(state)
+      ipcRenderer.on('updater:status', handler)
+      return () => ipcRenderer.removeListener('updater:status', handler)
+    },
+    onProgressChange: (callback: (progress: any) => void) => {
+      const handler = (_event: any, progress: any) => callback(progress)
+      ipcRenderer.on('updater:progress', handler)
+      return () => ipcRenderer.removeListener('updater:progress', handler)
+    },
+  },
 }
 
 // Expose safe API to the Renderer process

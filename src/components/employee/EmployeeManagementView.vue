@@ -218,16 +218,6 @@ function onImportSuccess(updated: VaultItem[]) {
 
         <!-- Main Actions -->
         <div class="flex items-center gap-2 flex-wrap">
-          <!-- Download Template -->
-          <button
-            @click="downloadEmployeeTemplate('xlsx')"
-            class="hidden md:flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl border border-border bg-background hover:bg-muted text-foreground transition"
-            title="Download blank Excel template with sample data"
-          >
-            <Download class="w-3.5 h-3.5 text-muted-foreground" />
-            <span>Sample Template</span>
-          </button>
-
           <!-- Export -->
           <button
             @click="showExportModal = true"
@@ -295,7 +285,7 @@ function onImportSuccess(updated: VaultItem[]) {
 
     <!-- Search & Filter Controls Toolbar -->
     <div class="p-3 border-b border-border bg-card flex items-center justify-between gap-3 flex-wrap shrink-0">
-      <div class="flex items-center gap-2 flex-1 min-w-[240px] max-w-lg">
+      <div class="flex items-center gap-2 flex-1 min-w-[240px] max-w-3xl">
         <!-- Search bar -->
         <div class="flex-1 relative">
           <Search class="w-3.5 h-3.5 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />

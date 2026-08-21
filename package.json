@@ -7,7 +7,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite --port 3000 --host 0.0.0.0",
-    "build": "vue-tsc && vite build",
+    "build": "vue-tsc && vite build && electron-builder",
     "preview": "vite preview",
     "lint": "vue-tsc --noEmit",
     "electron:dev": "vite",
@@ -20,6 +20,7 @@
     "@vueuse/core": "^14.4.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "electron-updater": "^6.8.9",
     "reka-ui": "^2.10.3",
     "tailwind-merge": "^3.6.0",
     "tailwindcss": "^4.3.3",

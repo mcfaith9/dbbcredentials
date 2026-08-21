@@ -20,7 +20,24 @@ const electronAPI = {
   // External Links
   openExternal: (url) => ipcRenderer.invoke("app:openExternal", url),
   // System & Platform Info
-  getPlatformInfo: () => ipcRenderer.invoke("app:getPlatformInfo")
+  getPlatformInfo: () => ipcRenderer.invoke("app:getPlatformInfo"),
+  // Auto-Updater API
+  updater: {
+    check: () => ipcRenderer.invoke("updater:check"),
+    download: () => ipcRenderer.invoke("updater:download"),
+    install: () => ipcRenderer.invoke("updater:install"),
+    getStatus: () => ipcRenderer.invoke("updater:getStatus"),
+    onStatusChange: (callback) => {
+      const handler = (_event, state) => callback(state);
+      ipcRenderer.on("updater:status", handler);
+      return () => ipcRenderer.removeListener("updater:status", handler);
+    },
+    onProgressChange: (callback) => {
+      const handler = (_event, progress) => callback(progress);
+      ipcRenderer.on("updater:progress", handler);
+      return () => ipcRenderer.removeListener("updater:progress", handler);
+    }
+  }
 };
 contextBridge.exposeInMainWorld("electronAPI", electronAPI);
 contextBridge.exposeInMainWorld("ipcRenderer", {

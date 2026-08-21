@@ -1,4 +1,5 @@
 import { app, BrowserWindow, ipcMain, dialog, shell, Notification } from 'electron'
+import { autoUpdater } from 'electron-updater'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 import fs from 'node:fs/promises'
@@ -16,12 +17,102 @@ process.env.VITE_PUBLIC = VITE_DEV_SERVER_URL ? path.join(process.env.APP_ROOT, 
 
 let win: BrowserWindow | null = null
 
+// Updater state tracker
+interface UpdateState {
+  status: 'idle' | 'checking' | 'available' | 'not-available' | 'downloading' | 'downloaded' | 'error' | 'dev-mode'
+  info: any | null
+  error: string | null
+  progress: {
+    percent: number
+    bytesPerSecond: number
+    transferred: number
+    total: number
+  } | null
+  lastChecked: string | null
+}
+
+const updateState: UpdateState = {
+  status: 'idle',
+  info: null,
+  error: null,
+  progress: null,
+  lastChecked: null,
+}
+
+function broadcastUpdateStatus() {
+  if (win && !win.isDestroyed()) {
+    win.webContents.send('updater:status', {
+      ...updateState,
+      currentVersion: app.getVersion() || '1.0.0',
+      isPackaged: app.isPackaged,
+    })
+  }
+}
+
+function broadcastUpdateProgress(progress: any) {
+  if (win && !win.isDestroyed()) {
+    win.webContents.send('updater:progress', progress)
+  }
+}
+
+function setupAutoUpdater() {
+  autoUpdater.autoDownload = false
+  autoUpdater.autoInstallOnAppQuit = true
+
+  autoUpdater.on('checking-for-update', () => {
+    updateState.status = 'checking'
+    updateState.error = null
+    broadcastUpdateStatus()
+  })
+
+  autoUpdater.on('update-available', (info) => {
+    updateState.status = 'available'
+    updateState.info = info
+    updateState.error = null
+    updateState.lastChecked = new Date().toISOString()
+    broadcastUpdateStatus()
+  })
+
+  autoUpdater.on('update-not-available', (info) => {
+    updateState.status = 'not-available'
+    updateState.info = info
+    updateState.error = null
+    updateState.lastChecked = new Date().toISOString()
+    broadcastUpdateStatus()
+  })
+
+  autoUpdater.on('error', (err) => {
+    updateState.status = 'error'
+    updateState.error = err?.message || 'Failed to check for updates'
+    updateState.lastChecked = new Date().toISOString()
+    broadcastUpdateStatus()
+  })
+
+  autoUpdater.on('download-progress', (progressObj) => {
+    updateState.status = 'downloading'
+    updateState.progress = {
+      percent: Math.round(progressObj.percent || 0),
+      bytesPerSecond: progressObj.bytesPerSecond || 0,
+      transferred: progressObj.transferred || 0,
+      total: progressObj.total || 0,
+    }
+    broadcastUpdateStatus()
+    broadcastUpdateProgress(updateState.progress)
+  })
+
+  autoUpdater.on('update-downloaded', (info) => {
+    updateState.status = 'downloaded'
+    updateState.info = info
+    broadcastUpdateStatus()
+  })
+}
+
 function createWindow() {
   win = new BrowserWindow({
     title: 'DBB Credentials Vault',
-    width: 960,
+    width: 1000,
     height: 720,
-    minWidth: 960,
+    minWidth: 1000,
     minHeight: 600,
     backgroundColor: '#09090b',
     // Custom framing for desktop titlebar
@@ -54,6 +145,17 @@ function createWindow() {
       shell.openExternal(url)
     }
     return { action: 'deny' }
+  })
+
+  // Background update check after window load in packaged mode
+  win.webContents.on('did-finish-load', () => {
+    if (app.isPackaged) {
+      setTimeout(() => {
+        autoUpdater.checkForUpdates().catch(() => {
+          // Silent fallback on startup
+        })
+      }, 4000)
+    }
   })
 
   if (VITE_DEV_SERVER_URL) {
@@ -184,6 +286,80 @@ ipcMain.handle('app:getPlatformInfo', () => {
   }
 })
 
+// Auto-Updater IPC Handlers
+ipcMain.handle('updater:check', async () => {
+  if (!app.isPackaged) {
+    updateState.status = 'dev-mode'
+    updateState.lastChecked = new Date().toISOString()
+    broadcastUpdateStatus()
+    return {
+      status: 'dev-mode',
+      currentVersion: app.getVersion() || '1.0.0',
+      message: 'Running in development environment. Auto-updater is active in packaged builds.',
+      isPackaged: false,
+    }
+  }
+
+  try {
+    updateState.status = 'checking'
+    broadcastUpdateStatus()
+    const result = await autoUpdater.checkForUpdates()
+    return {
+      success: true,
+      updateInfo: result?.updateInfo,
+      currentVersion: app.getVersion(),
+      isPackaged: true,
+    }
+  } catch (err: any) {
+    updateState.status = 'error'
+    updateState.error = err?.message || 'Failed to check for updates'
+    broadcastUpdateStatus()
+    return {
+      success: false,
+      error: err?.message || 'Failed to check for updates',
+      currentVersion: app.getVersion(),
+      isPackaged: true,
+    }
+  }
+})
+
+ipcMain.handle('updater:download', async () => {
+  if (!app.isPackaged) {
+    return { success: false, error: 'Cannot download updates in development mode' }
+  }
+  try {
+    updateState.status = 'downloading'
+    broadcastUpdateStatus()
+    await autoUpdater.downloadUpdate()
+    return { success: true }
+  } catch (err: any) {
+    updateState.status = 'error'
+    updateState.error = err?.message || 'Download failed'
+    broadcastUpdateStatus()
+    return { success: false, error: err?.message || 'Failed to download update' }
+  }
+})
+
+ipcMain.handle('updater:install', () => {
+  if (!app.isPackaged) {
+    return { success: false, error: 'Cannot install updates in development mode' }
+  }
+  try {
+    autoUpdater.quitAndInstall()
+    return { success: true }
+  } catch (err: any) {
+    return { success: false, error: err?.message || 'Failed to install update' }
+  }
+})
+
+ipcMain.handle('updater:getStatus', () => {
+  return {
+    ...updateState,
+    currentVersion: app.getVersion() || '1.0.0',
+    isPackaged: app.isPackaged,
+  }
+})
+
 // App Lifecycle
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
@@ -198,4 +374,7 @@ app.on('activate', () => {
   }
 })
 
-app.whenReady().then(createWindow)
+app.whenReady().then(() => {
+  setupAutoUpdater()
+  createWindow()
+})

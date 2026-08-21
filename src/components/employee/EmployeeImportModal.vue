@@ -554,14 +554,19 @@ function handleClose() {
                     {{ row.rowNumber }}
                   </td>
 
-                  <!-- Employee Name -->
+                  <!-- Employee Name & DOB -->
                   <td class="py-2.5 px-3 font-semibold text-foreground">
                     <div class="flex items-center gap-1.5">
                       <span>{{ row.data.name || '(No Name Provided)' }}</span>
                     </div>
-                    <span v-if="row.data.dmbb_id" class="text-[10px] font-mono text-muted-foreground block">
-                      ID: {{ row.data.dmbb_id }}
-                    </span>
+                    <div class="flex items-center gap-2 mt-0.5 flex-wrap">
+                      <span v-if="row.data.dmbb_id" class="text-[10px] font-mono text-muted-foreground">
+                        ID: {{ row.data.dmbb_id }}
+                      </span>
+                      <span v-if="row.data.birthdate" class="text-[10px] text-muted-foreground">
+                        DOB: <span class="font-medium text-foreground/80">{{ row.data.birthdate }}</span>
+                      </span>
+                    </div>
                   </td>
 
                   <!-- Dept & Position -->
@@ -613,11 +618,22 @@ function handleClose() {
 
                       <!-- Warnings -->
                       <span
-                        v-if="row.hasMissingImportantInfo"
-                        class="px-1.5 py-0.5 rounded-md text-[10px] font-medium bg-yellow-500/10 text-yellow-600 border border-yellow-500/20"
-                        :title="row.missingInfoReasons.join(', ')"
+                        v-if="row.hasMissingImportantInfo || (row.formatWarnings && row.formatWarnings.length > 0)"
+                        class="px-1.5 py-0.5 rounded-md text-[10px] font-medium bg-amber-500/10 text-amber-600 border border-amber-500/20"
+                        :title="[...row.missingInfoReasons, ...(row.formatWarnings || [])].join(', ')"
                       >
-                        Incomplete
+                        Needs Review
+                      </span>
+                    </div>
+
+                    <!-- Warning explanation -->
+                    <div v-if="row.formatWarnings && row.formatWarnings.length > 0" class="mt-1 space-y-0.5">
+                      <span
+                        v-for="warn in row.formatWarnings"
+                        :key="warn"
+                        class="text-[10px] text-amber-600 dark:text-amber-400 block font-medium"
+                      >
+                        ⚠ {{ warn }}
                       </span>
                     </div>
 

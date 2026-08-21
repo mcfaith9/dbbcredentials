@@ -246,77 +246,210 @@ export function calculateNameSimilarity(name1: string, name2: string): number {
 }
 
 /**
- * Parses flexible dates (Excel numeric serial, "June 19, 1976", "1976-06-19", "06/19/1976", etc.)
- * Returns a standardized human-readable string and a comparison key YYYY-MM-DD
+ * Philippines-friendly month names
+ */
+const MONTH_NAMES = [
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
+] as const
+
+const MONTH_MAP: Record<string, number> = {
+  jan: 1,
+  january: 1,
+  feb: 2,
+  february: 2,
+  mar: 3,
+  march: 3,
+  apr: 4,
+  april: 4,
+  may: 5,
+  jun: 6,
+  june: 6,
+  jul: 7,
+  july: 7,
+  aug: 8,
+  august: 8,
+  sep: 9,
+  sept: 9,
+  september: 9,
+  oct: 10,
+  october: 10,
+  nov: 11,
+  november: 11,
+  dec: 12,
+  december: 12,
+}
+
+function isValidCalendarDate(year: number, month: number, day: number): boolean {
+  if (year < 1900 || year > 2100 || month < 1 || month > 12 || day < 1 || day > 31) {
+    return false
+  }
+  const date = new Date(year, month - 1, day)
+  return date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day
+}
+
+function buildDateResult(year: number, month: number, day: number): { display: string; normalizedKey: string; isValid: boolean } {
+  const mName = MONTH_NAMES[month - 1] || String(month)
+  const padM = String(month).padStart(2, '0')
+  const padD = String(day).padStart(2, '0')
+  return {
+    display: `${mName} ${day}, ${year}`,
+    normalizedKey: `${year}-${padM}-${padD}`,
+    isValid: true,
+  }
+}
+
+/**
+ * Parses flexible employee birthdates:
+ * - Excel numeric serial values (e.g. 27929 -> "June 19, 1976", 2797 -> "August 28, 1907")
+ * - Text formats: "June 19, 1976", "June 19 1976", "Jun 19, 1976", "19 June 1976", "19-Jun-1976"
+ * - Delimited numbers: "06/19/1976", "19/06/1976", "1976-06-19", "1976/06/19"
+ * - 2-digit years: "06/19/76", "June 19, 76"
+ * 
+ * Returns standardized display format (e.g. "June 19, 1976") and normalizedKey "YYYY-MM-DD".
+ * If unparseable or invalid, returns { display: rawValue, normalizedKey: '', isValid: false }.
  */
 export function parseEmployeeDate(val: any): { display: string; normalizedKey: string; isValid: boolean } {
   if (val === null || val === undefined || val === '') {
     return { display: '', normalizedKey: '', isValid: true }
   }
 
-  // Handle Excel Serial Number (e.g. 27929 for June 19, 1976)
-  if (typeof val === 'number' && val > 1000) {
-    try {
-      const date = XLSX.SSF.parse_date_code(val)
-      if (date) {
-        const monthNames = [
-          'January',
-          'February',
-          'March',
-          'April',
-          'May',
-          'June',
-          'July',
-          'August',
-          'September',
-          'October',
-          'November',
-          'December',
-        ]
-        const m = String(date.m).padStart(2, '0')
-        const d = String(date.d).padStart(2, '0')
-        const y = String(date.y)
-        const monthName = monthNames[date.m - 1] || m
-        return {
-          display: `${monthName} ${date.d}, ${y}`,
-          normalizedKey: `${y}-${m}-${d}`,
-          isValid: true,
+  // 1. Handle JavaScript Date objects
+  if (val instanceof Date && !isNaN(val.getTime())) {
+    const y = val.getFullYear()
+    const m = val.getMonth() + 1
+    const d = val.getDate()
+    if (isValidCalendarDate(y, m, d)) {
+      return buildDateResult(y, m, d)
+    }
+  }
+
+  // 2. Handle Excel Serial Numbers (number or pure numeric string)
+  const isNumericValue = typeof val === 'number' || (typeof val === 'string' && /^\s*\d+(\.\d+)?\s*$/.test(val))
+  if (isNumericValue) {
+    const num = Number(val)
+    if (num > 0 && num < 300000) {
+      try {
+        const dateCode = XLSX.SSF.parse_date_code(num)
+        if (dateCode && typeof dateCode.y === 'number' && typeof dateCode.m === 'number' && typeof dateCode.d === 'number') {
+          let y = dateCode.y
+          const m = dateCode.m
+          const d = dateCode.d
+          if (y < 100) {
+            y = y >= 30 ? 1900 + y : 2000 + y
+          }
+          if (isValidCalendarDate(y, m, d)) {
+            return buildDateResult(y, m, d)
+          }
         }
+      } catch {
+        // Continue to string parsing
       }
-    } catch {
-      // fallback to string parsing
     }
   }
 
   const str = String(val).trim()
   if (!str) return { display: '', normalizedKey: '', isValid: true }
 
-  // Try parsing Date
-  const parsed = new Date(str)
-  if (!isNaN(parsed.getTime()) && parsed.getFullYear() > 1900 && parsed.getFullYear() < 2100) {
-    const y = parsed.getFullYear()
-    const m = String(parsed.getMonth() + 1).padStart(2, '0')
-    const d = String(parsed.getDate()).padStart(2, '0')
-    return {
-      display: str,
-      normalizedKey: `${y}-${m}-${d}`,
-      isValid: true,
+  // 3. Match Text Month Formats (e.g. "June 19, 1976", "Jun 19, 1976", "June 19 1976", "June 19th, 1976")
+  const textMonthMatch1 = str.match(/^([a-zA-Z]+)[,\s]+(\d{1,2})(?:st|nd|rd|th)?[,\s]+(\d{2,4})$/)
+  if (textMonthMatch1) {
+    const mKey = textMonthMatch1[1].toLowerCase()
+    const d = parseInt(textMonthMatch1[2], 10)
+    let y = parseInt(textMonthMatch1[3], 10)
+    if (y < 100) y = y >= 30 ? 1900 + y : 2000 + y
+    const m = MONTH_MAP[mKey]
+    if (m && isValidCalendarDate(y, m, d)) {
+      return buildDateResult(y, m, d)
     }
   }
 
-  // String check for common Philippine dates like "June 19, 1976"
-  const monthMatch = str.match(
-    /(Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)[,\s]+(\d{1,2})[,\s]+(\d{4})/i
-  )
-  if (monthMatch) {
-    return {
-      display: str,
-      normalizedKey: str.toLowerCase().replace(/[^a-z0-9]/g, ''),
-      isValid: true,
+  // 4. Match Day-Month-Year (e.g. "19 June 1976", "19-Jun-1976", "19th June 1976", "19/Jun/1976")
+  const textMonthMatch2 = str.match(/^(\d{1,2})(?:st|nd|rd|th)?[,\s\-/]+([a-zA-Z]+)[,\s\-/]+(\d{2,4})$/)
+  if (textMonthMatch2) {
+    const d = parseInt(textMonthMatch2[1], 10)
+    const mKey = textMonthMatch2[2].toLowerCase()
+    let y = parseInt(textMonthMatch2[3], 10)
+    if (y < 100) y = y >= 30 ? 1900 + y : 2000 + y
+    const m = MONTH_MAP[mKey]
+    if (m && isValidCalendarDate(y, m, d)) {
+      return buildDateResult(y, m, d)
     }
   }
 
-  return { display: str, normalizedKey: str.toLowerCase().replace(/[^a-z0-9]/g, ''), isValid: true }
+  // 5. Match Year-Month-Day with text month (e.g. "1976-Jun-19", "1976 June 19")
+  const textMonthMatch3 = str.match(/^(\d{4})[,\s\-/]+([a-zA-Z]+)[,\s\-/]+(\d{1,2})(?:st|nd|rd|th)?$/)
+  if (textMonthMatch3) {
+    const y = parseInt(textMonthMatch3[1], 10)
+    const mKey = textMonthMatch3[2].toLowerCase()
+    const d = parseInt(textMonthMatch3[3], 10)
+    const m = MONTH_MAP[mKey]
+    if (m && isValidCalendarDate(y, m, d)) {
+      return buildDateResult(y, m, d)
+    }
+  }
+
+  // 6. Match ISO / Delimited Numeric: YYYY-MM-DD, YYYY/MM/DD, YYYY.MM.DD
+  const isoNumericMatch = str.match(/^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})(?:[T\s].*)?$/)
+  if (isoNumericMatch) {
+    const y = parseInt(isoNumericMatch[1], 10)
+    const m = parseInt(isoNumericMatch[2], 10)
+    const d = parseInt(isoNumericMatch[3], 10)
+    if (isValidCalendarDate(y, m, d)) {
+      return buildDateResult(y, m, d)
+    }
+  }
+
+  // 7. Match Delimited Numeric with 4-digit or 2-digit Year at end: MM/DD/YYYY or DD/MM/YYYY
+  const endYearMatch = str.match(/^(\d{1,2})[-/.](\d{1,2})[-/.](\d{2,4})$/)
+  if (endYearMatch) {
+    const part1 = parseInt(endYearMatch[1], 10)
+    const part2 = parseInt(endYearMatch[2], 10)
+    let y = parseInt(endYearMatch[3], 10)
+    if (y < 100) y = y >= 30 ? 1900 + y : 2000 + y
+
+    // Disambiguate MM/DD vs DD/MM:
+    // If part1 > 12 -> part1 must be day, part2 is month (DD/MM/YYYY)
+    // If part2 > 12 -> part1 is month, part2 is day (MM/DD/YYYY)
+    // If both <= 12 -> standard Philippines/US MM/DD/YYYY
+    let m = part1
+    let d = part2
+    if (part1 > 12 && part2 <= 12) {
+      d = part1
+      m = part2
+    } else if (part2 > 12 && part1 <= 12) {
+      m = part1
+      d = part2
+    }
+
+    if (isValidCalendarDate(y, m, d)) {
+      return buildDateResult(y, m, d)
+    }
+  }
+
+  // 8. General Date parsing fallback
+  const parsedFallback = new Date(str)
+  if (!isNaN(parsedFallback.getTime())) {
+    const y = parsedFallback.getFullYear()
+    const m = parsedFallback.getMonth() + 1
+    const d = parsedFallback.getDate()
+    if (isValidCalendarDate(y, m, d)) {
+      return buildDateResult(y, m, d)
+    }
+  }
+
+  // Unrecognized / Invalid birthdate
+  return { display: str, normalizedKey: '', isValid: false }
 }
 
 // -------------------------------------------------------------
@@ -364,6 +497,20 @@ export function analyzeImportRecord(
   alreadyAnalyzedBatch: AnalyzedImportRow[]
 ): AnalyzedImportRow {
   // Extract and map data
+  const rawBirthVal =
+    rawRecord.birthdate ??
+    rawRecord.BIRTHDATE ??
+    rawRecord['Birth Date'] ??
+    rawRecord['Birthdate'] ??
+    rawRecord['birth_date'] ??
+    rawRecord['DOB'] ??
+    rawRecord['dob'] ??
+    rawRecord['Date of Birth'] ??
+    rawRecord['bday'] ??
+    rawRecord['Birthday']
+
+  const dateCheck = parseEmployeeDate(rawBirthVal)
+
   const data: EmployeeRecord = {
     name: cleanText(rawRecord.name || rawRecord.full_name || rawRecord["EMPLOYEE'S NAME"] || rawRecord['Employee Name']),
     department: cleanText(rawRecord.department || rawRecord.Department),
@@ -386,7 +533,7 @@ export function analyzeImportRecord(
         rawRecord.philhealth_no
     ),
     tin_no: cleanText(rawRecord.tin_no || rawRecord['TIN NO.'] || rawRecord['TIN No.'] || rawRecord.tin),
-    birthdate: cleanText(rawRecord.birthdate || rawRecord.BIRTHDATE || rawRecord['Birth Date']),
+    birthdate: dateCheck.isValid ? dateCheck.display : cleanText(rawBirthVal),
     address: cleanText(rawRecord.address || rawRecord.ADDRESS || rawRecord['Home Address']),
     dmbb_id: cleanText(
       rawRecord.dmbb_id ||
@@ -422,9 +569,11 @@ export function analyzeImportRecord(
     missingInfoReasons.push('No government ID or DMBB ID provided')
   }
 
-  const dateCheck = parseEmployeeDate(data.birthdate)
-  if (data.birthdate && !dateCheck.isValid) {
-    formatWarnings.push(`Birthdate "${data.birthdate}" could not be safely verified`)
+  if (rawBirthVal !== null && rawBirthVal !== undefined && String(rawBirthVal).trim() !== '') {
+    if (!dateCheck.isValid) {
+      formatWarnings.push(`Birthdate "${cleanText(rawBirthVal)}" could not be parsed into a calendar date`)
+      missingInfoReasons.push(`Invalid birthdate format: "${cleanText(rawBirthVal)}"`)
+    }
   }
 
   // Normalized values for comparison

@@ -56,8 +56,8 @@ function handleNavClick(filter: VaultNavFilter) {
     <!-- Sidebar Header: Brand & App Title -->
     <div class="p-4 border-b border-sidebar-border flex items-center justify-between">
       <div class="flex items-center gap-2.5 min-w-0">
-        <div class="p-2 rounded-xl bg-primary text-primary-foreground font-bold shadow-sm">
-          <Building2 class="w-5 h-5" />
+        <div>
+          <img src="@/assets/img/dbblogo.png" class="w-8 rounded-full" />
         </div>
         <div class="min-w-0">
           <h1 class="text-sm font-bold tracking-tight text-sidebar-foreground truncate">DBB Vault</h1>
