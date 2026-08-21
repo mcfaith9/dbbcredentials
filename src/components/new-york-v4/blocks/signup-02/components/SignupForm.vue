@@ -27,20 +27,23 @@ const confirmPassword = ref("")
 const error = ref("")
 const isLoading = ref(false)
 
-function handleSubmit() {
+async function handleSubmit() {
   error.value = ""
   isLoading.value = true
 
-  setTimeout(() => {
-    const result = signup(name.value, email.value, password.value, confirmPassword.value)
-    isLoading.value = false
+  const result = await signup({
+    name: name.value,
+    email: email.value,
+    password: password.value,
+    confirmPassword: confirmPassword.value,
+  })
+  isLoading.value = false
 
-    if (result.success) {
-      router.push('/dashboard')
-    } else {
-      error.value = result.error || "Registration failed. Please try again."
-    }
-  }, 400)
+  if (result.success) {
+    router.push('/dashboard')
+  } else {
+    error.value = "Registration failed. Please try again."
+  }
 }
 
 function handleGithubSignup() {

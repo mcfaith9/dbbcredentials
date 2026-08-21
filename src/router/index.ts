@@ -20,9 +20,8 @@ const router = createRouter({
       meta: { guestOnly: true },
     },
     {
-      path: '/signup',
-      component: () => import('@/components/auth/SignupView.vue'),
-      meta: { guestOnly: true },
+      path: '/:pathMatch(.*)*',
+      redirect: '/dashboard',
     },
   ],
 })

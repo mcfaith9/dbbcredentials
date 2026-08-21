@@ -1,170 +1,132 @@
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
+import type { User } from '@/types'
+import { LocalStorageService } from '@/services/storage'
+import { verifyPassword } from '@/services/crypto'
 
-export interface User {
-  id: string
-  name: string
-  email: string
-  avatar?: string
+const isUnlocked = ref(false)
+const currentUser = ref<User | null>(null)
+const lastActivityTime = ref(Date.now())
+let autoLockInterval: ReturnType<typeof setInterval> | null = null
+let activityListenersAttached = false
+
+function updateActivity() {
+  lastActivityTime.value = Date.now()
 }
 
-const DEFAULT_USERS = [
-  {
-    id: '1',
-    name: 'shadcn',
-    email: 'm@example.com',
-    password: 'password123',
-    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80',
-  },
-]
-
-// Persistent state across components
-const storedUser = localStorage.getItem('dbb_user')
-const currentUser = ref<User | null>(storedUser ? JSON.parse(storedUser) : null)
-
-const storedUsers = localStorage.getItem('dbb_registered_users')
-const registeredUsers = ref<Array<User & { password?: string }>>(
-  storedUsers ? JSON.parse(storedUsers) : DEFAULT_USERS
-)
-
-function saveUsers() {
-  localStorage.setItem('dbb_registered_users', JSON.stringify(registeredUsers.value))
-}
-
-function saveCurrentUser(user: User | null) {
-  currentUser.value = user
-  if (user) {
-    localStorage.setItem('dbb_user', JSON.stringify(user))
-  } else {
-    localStorage.removeItem('dbb_user')
-  }
+function attachActivityListeners() {
+  if (activityListenersAttached || typeof window === 'undefined') return
+  window.addEventListener('mousemove', updateActivity, { passive: true })
+  window.addEventListener('keydown', updateActivity, { passive: true })
+  window.addEventListener('click', updateActivity, { passive: true })
+  window.addEventListener('scroll', updateActivity, { passive: true })
+  activityListenersAttached = true
 }
 
 export function useAuth() {
   const router = useRouter()
 
-  const isAuthenticated = computed(() => !!currentUser.value)
+  // Initialize database and load user
+  async function initAuth() {
+    const user = await LocalStorageService.initializeDatabase()
+    currentUser.value = user
 
+    // Check if session was already active in this tab session
+    const sessionActive = sessionStorage.getItem('dbb_vault_unlocked') === 'true'
+    if (sessionActive && user) {
+      isUnlocked.value = true
+    }
+
+    attachActivityListeners()
+    startAutoLockCheck()
+  }
+
+  function startAutoLockCheck() {
+    if (autoLockInterval) clearInterval(autoLockInterval)
+    autoLockInterval = setInterval(() => {
+      if (!isUnlocked.value) return
+
+      const settings = LocalStorageService.getSettings()
+      const timeoutMinutes = settings.autoLockMinutes || 0
+
+      if (timeoutMinutes > 0) {
+        const elapsedMinutes = (Date.now() - lastActivityTime.value) / (1000 * 60)
+        if (elapsedMinutes >= timeoutMinutes) {
+          lock('Vault automatically locked due to inactivity.')
+        }
+      }
+    }, 10000)
+  }
+
+  const isAuthenticated = computed(() => isUnlocked.value)
   const user = computed(() => currentUser.value)
 
-  function login(email: string, password: string): { success: boolean; error?: string } {
-    const cleanEmail = email.trim().toLowerCase()
-    
-    if (!cleanEmail) {
-      return { success: false, error: 'Email address is required.' }
-    }
-    if (!password) {
-      return { success: false, error: 'Password is required.' }
+  async function login(username: string, password: string): Promise<{ success: boolean; error?: string }> {
+    const cleanUsername = username.trim()
+    if (!cleanUsername || !password) {
+      return { success: false, error: 'Please enter both username and password.' }
     }
 
-    const foundUser = registeredUsers.value.find(
-      (u) => u.email.toLowerCase() === cleanEmail
-    )
-
-    if (!foundUser) {
-      return { success: false, error: 'No account found with this email.' }
+    const dbUser = LocalStorageService.getUser()
+    if (!dbUser) {
+      // Re-init if missing
+      await LocalStorageService.initializeDatabase()
+      return login(username, password)
     }
 
-    if (foundUser.password && foundUser.password !== password) {
-      return { success: false, error: 'Incorrect password. Please try again.' }
+    if (dbUser.username.toLowerCase() !== cleanUsername.toLowerCase()) {
+      return { success: false, error: 'Invalid username or password.' }
     }
 
-    const authUser: User = {
-      id: foundUser.id,
-      name: foundUser.name,
-      email: foundUser.email,
-      avatar: foundUser.avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(foundUser.name)}`,
+    const isValid = await verifyPassword(password, dbUser.password_hash, dbUser.salt)
+    if (!isValid) {
+      return { success: false, error: 'Invalid username or password.' }
     }
 
-    saveCurrentUser(authUser)
+    isUnlocked.value = true
+    currentUser.value = dbUser
+    sessionStorage.setItem('dbb_vault_unlocked', 'true')
+    lastActivityTime.value = Date.now()
+
     return { success: true }
   }
 
-  function signup(
-    name: string,
-    email: string,
-    password: string,
-    confirmPassword?: string
-  ): { success: boolean; error?: string } {
-    const cleanName = name.trim()
-    const cleanEmail = email.trim().toLowerCase()
-
-    if (!cleanName) {
-      return { success: false, error: 'Full name is required.' }
-    }
-    if (!cleanEmail) {
-      return { success: false, error: 'Email address is required.' }
-    }
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    if (!emailRegex.test(cleanEmail)) {
-      return { success: false, error: 'Please enter a valid email address.' }
-    }
-    if (!password) {
-      return { success: false, error: 'Password is required.' }
-    }
-    if (password.length < 6) {
-      return { success: false, error: 'Password must be at least 6 characters long.' }
-    }
-    if (confirmPassword !== undefined && password !== confirmPassword) {
-      return { success: false, error: 'Passwords do not match.' }
-    }
-
-    const existingUser = registeredUsers.value.find(
-      (u) => u.email.toLowerCase() === cleanEmail
-    )
-
-    if (existingUser) {
-      return { success: false, error: 'An account with this email already exists.' }
-    }
-
-    const newUser = {
-      id: String(Date.now()),
-      name: cleanName,
-      email: cleanEmail,
-      password: password,
-      avatar: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(cleanName)}`,
-    }
-
-    registeredUsers.value.push(newUser)
-    saveUsers()
-
-    const authUser: User = {
-      id: newUser.id,
-      name: newUser.name,
-      email: newUser.email,
-      avatar: newUser.avatar,
-    }
-
-    saveCurrentUser(authUser)
-    return { success: true }
-  }
-
-  function loginWithGithub(): { success: boolean } {
-    const githubUser: User = {
-      id: 'github_user',
-      name: 'GitHub Developer',
-      email: 'dev@github.com',
-      avatar: 'https://avatars.githubusercontent.com/u/9919?v=4',
-    }
-
-    saveCurrentUser(githubUser)
-    return { success: true }
-  }
-
-  function logout() {
-    saveCurrentUser(null)
+  function lock(_reason?: string) {
+    isUnlocked.value = false
+    sessionStorage.removeItem('dbb_vault_unlocked')
     if (router) {
       router.push('/login')
     }
   }
 
+  async function changePassword(currentPassword: string, newPassword: string): Promise<{ success: boolean; error?: string }> {
+    const dbUser = LocalStorageService.getUser()
+    if (!dbUser) return { success: false, error: 'No user record found.' }
+
+    const isCurrentValid = await verifyPassword(currentPassword, dbUser.password_hash, dbUser.salt)
+    if (!isCurrentValid) {
+      return { success: false, error: 'Current password is incorrect.' }
+    }
+
+    if (!newPassword || newPassword.length < 6) {
+      return { success: false, error: 'New password must be at least 6 characters.' }
+    }
+
+    const updatedUser = await LocalStorageService.updateUserPassword(newPassword)
+    currentUser.value = updatedUser
+    return { success: true }
+  }
+
   return {
-    currentUser,
-    user,
+    isUnlocked,
     isAuthenticated,
+    user,
+    initAuth,
     login,
-    signup,
-    loginWithGithub,
-    logout,
+    lock,
+    logout: lock,
+    signup: async (_payload: any) => ({ success: true }),
+    loginWithGithub: async () => ({ success: true }),
+    changePassword,
   }
 }

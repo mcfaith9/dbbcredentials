@@ -25,20 +25,18 @@ const password = ref("password123")
 const error = ref("")
 const isLoading = ref(false)
 
-function handleSubmit() {
+async function handleSubmit() {
   error.value = ""
   isLoading.value = true
 
-  setTimeout(() => {
-    const result = login(email.value, password.value)
-    isLoading.value = false
+  const result = await login(email.value, password.value)
+  isLoading.value = false
 
-    if (result.success) {
-      router.push('/dashboard')
-    } else {
-      error.value = result.error || "Login failed. Please check your credentials."
-    }
-  }, 400)
+  if (result.success) {
+    router.push('/dashboard')
+  } else {
+    error.value = result.error || "Login failed. Please check your credentials."
+  }
 }
 
 function handleGithubLogin() {

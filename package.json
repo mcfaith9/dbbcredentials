@@ -4,9 +4,13 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "vue-tsc && vite build && electron-builder",
-    "preview": "vite preview"
+    "dev": "vite --port 3000 --host 0.0.0.0",
+    "build": "vue-tsc && vite build",
+    "preview": "vite preview",
+    "lint": "vue-tsc --noEmit",
+    "electron:dev": "vite",
+    "electron:build": "vue-tsc && vite build && electron-builder",
+    "electron:pack": "electron-builder --dir"
   },
   "dependencies": {
     "@lucide/vue": "^1.29.0",
