@@ -215,7 +215,7 @@ const currentViewTitle = computed(() => {
             v-model="searchQuery"
             type="text"
             placeholder="Search credentials, IPs, domains, licenses, staff... (Ctrl + K)"
-            class="w-full pl-9 pr-14 py-1.5 text-xs rounded-xl border border-border bg-muted/40 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition"
+            class="w-full pl-9 pr-14 py-1.5 text-xs rounded-xl border border-border bg-muted/40 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary"
           />
           <div class="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
             <button
@@ -250,7 +250,7 @@ const currentViewTitle = computed(() => {
           <!-- Theme toggle -->
           <button
             @click="toggleTheme"
-            class="p-2 text-muted-foreground hover:text-foreground rounded-lg border border-border hover:bg-muted transition"
+            class="p-2 text-muted-foreground hover:text-foreground rounded-lg border border-border hover:bg-muted"
             title="Toggle theme"
           >
             <Sun v-if="settings.theme === 'dark'" class="w-4 h-4" />
@@ -260,7 +260,7 @@ const currentViewTitle = computed(() => {
           <!-- Lock Application -->
           <button
             @click="lock()"
-            class="p-2 text-muted-foreground hover:text-foreground rounded-lg border border-border hover:bg-muted transition"
+            class="p-2 text-muted-foreground hover:text-foreground rounded-lg border border-border hover:bg-muted"
             title="Lock Vault (Ctrl+L)"
           >
             <Lock class="w-4 h-4 text-primary" />
@@ -452,7 +452,7 @@ const currentViewTitle = computed(() => {
                 v-for="item in filteredItems"
                 :key="item.id"
                 @click="selectItem(item.id)"
-                class="p-3 flex items-start justify-between gap-2.5 cursor-pointer transition select-none group"
+                class="p-3 flex items-start justify-between gap-2.5 cursor-pointer select-none group"
                 :class="
                   selectedItemId === item.id
                     ? 'bg-primary/10 border-l-4 border-l-primary'
@@ -460,13 +460,13 @@ const currentViewTitle = computed(() => {
                 "
               >
                 <div class="flex items-start gap-2.5 min-w-0">
-                  <div class="p-2 rounded-xl shrink-0 mt-0.5 bg-muted/50 text-foreground group-hover:bg-primary/10 group-hover:text-primary transition">
+                  <div class="p-2 rounded-xl shrink-0 mt-0.5 bg-muted/50 text-foreground group-hover:bg-primary/10 group-hover:text-primary">
                     <CredentialTypeIcon :type="item.type" size="sm" />
                   </div>
 
                   <div class="min-w-0">
                     <div class="flex items-center gap-1.5">
-                      <span class="text-xs font-bold text-foreground truncate group-hover:text-primary transition">
+                      <span class="text-xs font-bold text-foreground truncate group-hover:text-primary">
                         {{ item.name }}
                       </span>
                     </div>
@@ -503,7 +503,7 @@ const currentViewTitle = computed(() => {
                   <button
                     v-if="item.password || item.license_key || item.content"
                     @click.stop="quickCopyPassword(item)"
-                    class="p-1 text-muted-foreground hover:text-foreground rounded hover:bg-muted transition"
+                    class="p-1 text-muted-foreground hover:text-foreground rounded hover:bg-muted"
                     title="Quick Copy Secret"
                   >
                     <Check v-if="copiedRowId === item.id" class="w-3.5 h-3.5 text-emerald-600" />
@@ -512,7 +512,7 @@ const currentViewTitle = computed(() => {
 
                   <button
                     @click.stop="toggleFavorite(item.id)"
-                    class="p-1 text-muted-foreground hover:text-amber-500 transition"
+                    class="p-1 text-muted-foreground hover:text-amber-500"
                     :class="{ 'text-amber-500': item.favorite }"
                     title="Favorite"
                   >

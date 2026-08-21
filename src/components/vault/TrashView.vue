@@ -53,7 +53,7 @@ function handleEmptyTrash() {
       <button
         v-if="trashItems.length > 0"
         @click="showConfirmEmpty = true"
-        class="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-500/30 transition shadow-sm"
+        class="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-500/30 shadow-sm"
       >
         <Trash2 class="w-4 h-4" />
         <span>Empty Trash</span>
@@ -79,7 +79,7 @@ function handleEmptyTrash() {
       <div
         v-for="item in trashItems"
         :key="item.id"
-        class="p-4 rounded-xl border border-border bg-card hover:bg-muted/30 transition flex items-center justify-between gap-4 shadow-sm"
+        class="p-4 rounded-xl border border-border bg-card hover:bg-muted/30 flex items-center justify-between gap-4 shadow-sm"
       >
         <div class="flex items-center gap-3.5 min-w-0">
           <div
@@ -106,7 +106,7 @@ function handleEmptyTrash() {
         <div class="flex items-center gap-2 shrink-0">
           <button
             @click="handleRestore(item)"
-            class="flex items-center gap-1 px-3 py-1.5 text-xs font-semibold rounded-lg border border-border bg-background hover:bg-muted text-foreground transition"
+            class="flex items-center gap-1 px-3 py-1.5 text-xs font-semibold rounded-lg border border-border bg-background hover:bg-muted text-foreground"
             title="Restore Item"
           >
             <RotateCcw class="w-3.5 h-3.5 text-emerald-600" />
@@ -115,7 +115,7 @@ function handleEmptyTrash() {
 
           <button
             @click="handlePermanentDelete(item)"
-            class="p-2 rounded-lg border border-border hover:bg-rose-500/10 hover:border-rose-500/30 text-muted-foreground hover:text-rose-600 transition"
+            class="p-2 rounded-lg border border-border hover:bg-rose-500/10 hover:border-rose-500/30 text-muted-foreground hover:text-rose-600"
             title="Permanently Delete"
           >
             <Trash2 class="w-4 h-4" />
@@ -143,13 +143,13 @@ function handleEmptyTrash() {
         <div class="flex items-center justify-end gap-2.5 pt-2">
           <button
             @click="showConfirmEmpty = false"
-            class="px-4 py-2 text-xs font-semibold rounded-xl text-muted-foreground hover:bg-muted transition"
+            class="px-4 py-2 text-xs font-semibold rounded-xl text-muted-foreground hover:bg-muted"
           >
             Cancel
           </button>
           <button
             @click="handleEmptyTrash"
-            class="px-4 py-2 text-xs font-semibold rounded-xl bg-rose-600 hover:bg-rose-700 text-white transition shadow-sm"
+            class="px-4 py-2 text-xs font-semibold rounded-xl bg-rose-600 hover:bg-rose-700 text-white shadow-sm"
           >
             Yes, Empty All
           </button>

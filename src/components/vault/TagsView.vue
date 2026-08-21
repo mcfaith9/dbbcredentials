@@ -40,7 +40,7 @@ const filteredTags = computed(() => {
         v-model="searchTagQuery"
         type="text"
         placeholder="Filter tags..."
-        class="w-full pl-9 pr-4 py-2 text-xs rounded-xl border border-border bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition"
+        class="w-full pl-9 pr-4 py-2 text-xs rounded-xl border border-border bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary"
       />
     </div>
 
@@ -60,13 +60,13 @@ const filteredTags = computed(() => {
         v-for="t in filteredTags"
         :key="t.name"
         @click="emit('select-tag', t.name)"
-        class="p-3.5 rounded-xl border border-border bg-card hover:bg-muted/40 transition flex items-center justify-between text-left group shadow-sm"
+        class="p-3.5 rounded-xl border border-border bg-card hover:bg-muted/40 flex items-center justify-between text-left group shadow-sm"
       >
         <div class="flex items-center gap-2 min-w-0">
-          <div class="p-1.5 rounded-md bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors shrink-0">
+          <div class="p-1.5 rounded-md bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground shrink-0">
             <Hash class="w-3.5 h-3.5" />
           </div>
-          <span class="text-xs font-semibold text-foreground truncate group-hover:text-primary transition-colors">
+          <span class="text-xs font-semibold text-foreground truncate group-hover:text-primary">
             {{ t.name }}
           </span>
         </div>

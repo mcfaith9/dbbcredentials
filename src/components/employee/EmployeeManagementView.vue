@@ -228,7 +228,7 @@ function onImportSuccess(updated: VaultItem[]) {
           <!-- Export -->
           <button
             @click="showExportModal = true"
-            class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl border border-border bg-background hover:bg-muted text-foreground transition"
+            class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl border border-border bg-background hover:bg-muted text-foreground"
           >
             <Download class="w-3.5 h-3.5 text-emerald-600" />
             <span>Export</span>
@@ -237,7 +237,7 @@ function onImportSuccess(updated: VaultItem[]) {
           <!-- Import -->
           <button
             @click="showImportModal = true"
-            class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl border border-primary/30 bg-primary/10 hover:bg-primary/20 text-primary transition"
+            class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl border border-primary/30 bg-primary/10 hover:bg-primary/20 text-primary"
           >
             <Upload class="w-3.5 h-3.5" />
             <span>Import Excel / CSV</span>
@@ -246,7 +246,7 @@ function onImportSuccess(updated: VaultItem[]) {
           <!-- + Add Employee -->
           <button
             @click="emit('add-employee')"
-            class="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition shadow-sm"
+            class="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm"
           >
             <Plus class="w-4 h-4" />
             <span>Add Employee</span>
@@ -409,7 +409,7 @@ function onImportSuccess(updated: VaultItem[]) {
         <div class="flex items-center p-0.5 rounded-xl border border-border bg-muted/40">
           <button
             @click="viewMode = 'table'"
-            class="p-1.5 rounded-lg transition"
+            class="p-1.5 rounded-lg"
             :class="viewMode === 'table' ? 'bg-card text-foreground shadow-xs' : 'text-muted-foreground hover:text-foreground'"
             title="Table View"
           >
@@ -417,7 +417,7 @@ function onImportSuccess(updated: VaultItem[]) {
           </button>
           <button
             @click="viewMode = 'cards'"
-            class="p-1.5 rounded-lg transition"
+            class="p-1.5 rounded-lg"
             :class="viewMode === 'cards' ? 'bg-card text-foreground shadow-xs' : 'text-muted-foreground hover:text-foreground'"
             title="Grid Cards View"
           >
@@ -425,7 +425,7 @@ function onImportSuccess(updated: VaultItem[]) {
           </button>
           <button
             @click="viewMode = 'split'"
-            class="p-1.5 rounded-lg transition"
+            class="p-1.5 rounded-lg"
             :class="viewMode === 'split' ? 'bg-card text-foreground shadow-xs' : 'text-muted-foreground hover:text-foreground'"
             title="Split Master-Detail View"
           >
@@ -454,13 +454,13 @@ function onImportSuccess(updated: VaultItem[]) {
         <div class="flex items-center gap-2 pt-2">
           <button
             @click="emit('add-employee')"
-            class="px-4 py-2 text-xs font-bold rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition"
+            class="px-4 py-2 text-xs font-bold rounded-xl bg-primary text-primary-foreground hover:bg-primary/90"
           >
             + Add New Employee
           </button>
           <button
             @click="showImportModal = true"
-            class="px-4 py-2 text-xs font-semibold rounded-xl border border-border bg-card hover:bg-muted text-foreground transition"
+            class="px-4 py-2 text-xs font-semibold rounded-xl border border-border bg-card hover:bg-muted text-foreground"
           >
             Import from Excel
           </button>
@@ -495,7 +495,7 @@ function onImportSuccess(updated: VaultItem[]) {
             <tr
               v-for="emp in filteredEmployees"
               :key="emp.id"
-              class="hover:bg-muted/30 transition group"
+              class="hover:bg-muted/30 group"
               :class="{ 'bg-primary/5': selectedEmployeeIds.includes(emp.id) }"
             >
               <!-- Checkbox -->
@@ -631,7 +631,7 @@ function onImportSuccess(updated: VaultItem[]) {
                 <div class="flex items-center justify-end gap-1">
                   <button
                     @click="toggleFavorite(emp.id)"
-                    class="p-1.5 text-muted-foreground hover:text-amber-500 rounded hover:bg-muted transition"
+                    class="p-1.5 text-muted-foreground hover:text-amber-500 rounded hover:bg-muted"
                     title="Favorite"
                   >
                     <Star class="w-3.5 h-3.5" :class="{ 'fill-amber-500 text-amber-500': emp.favorite }" />
@@ -639,7 +639,7 @@ function onImportSuccess(updated: VaultItem[]) {
 
                   <button
                     @click="emit('edit-employee', emp)"
-                    class="p-1.5 text-muted-foreground hover:text-foreground rounded hover:bg-muted transition"
+                    class="p-1.5 text-muted-foreground hover:text-foreground rounded hover:bg-muted"
                     title="Edit Employee"
                   >
                     <Edit class="w-3.5 h-3.5" />
@@ -647,7 +647,7 @@ function onImportSuccess(updated: VaultItem[]) {
 
                   <button
                     @click="moveToTrash(emp.id)"
-                    class="p-1.5 text-muted-foreground hover:text-rose-600 rounded hover:bg-rose-500/10 transition"
+                    class="p-1.5 text-muted-foreground hover:text-rose-600 rounded hover:bg-rose-500/10"
                     title="Move to Trash"
                   >
                     <Trash2 class="w-3.5 h-3.5" />
@@ -668,7 +668,7 @@ function onImportSuccess(updated: VaultItem[]) {
           <div
             v-for="emp in filteredEmployees"
             :key="emp.id"
-            class="p-4 rounded-2xl border border-border bg-card hover:border-primary/40 transition shadow-xs flex flex-col justify-between space-y-3 group"
+            class="p-4 rounded-2xl border border-border bg-card hover:border-primary/40 shadow-xs flex flex-col justify-between space-y-3 group"
           >
             <!-- Card Top: Name & Badges -->
             <div class="space-y-2">
@@ -789,7 +789,7 @@ function onImportSuccess(updated: VaultItem[]) {
               v-for="emp in filteredEmployees"
               :key="emp.id"
               @click="selectItem(emp.id)"
-              class="p-3 cursor-pointer transition select-none flex items-start justify-between gap-2.5"
+              class="p-3 cursor-pointer select-none flex items-start justify-between gap-2.5"
               :class="selectedItemId === emp.id ? 'bg-primary/10 border-l-4 border-l-primary' : 'hover:bg-muted/40'"
             >
               <div class="min-w-0">

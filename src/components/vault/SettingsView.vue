@@ -287,7 +287,7 @@ function handleResetVault() {
 
       <button
         @click="lock()"
-        class="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-xl bg-muted hover:bg-muted/80 text-foreground border border-border transition shadow-sm"
+        class="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-xl bg-muted hover:bg-muted/80 text-foreground border border-border shadow-sm"
       >
         <Lock class="w-4 h-4 text-primary" />
         <span>Lock Vault Now</span>
@@ -323,7 +323,7 @@ function handleResetVault() {
           <div class="flex items-start gap-3.5">
             <!-- Dynamic Status Icon -->
             <div
-              class="p-2.5 rounded-xl shrink-0 flex items-center justify-center transition-colors"
+              class="p-2.5 rounded-xl shrink-0 flex items-center justify-center"
               :class="{
                 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400': updateState.status === 'not-available' || updateState.status === 'idle' || updateState.status === 'dev-mode',
                 'bg-amber-500/10 text-amber-600 dark:text-amber-400 animate-pulse': updateState.status === 'available',
@@ -380,7 +380,7 @@ function handleResetVault() {
             <button
               v-if="updateState.status === 'available'"
               @click="handleDownloadUpdate"
-              class="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition shadow-sm"
+              class="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm"
             >
               <Download class="w-3.5 h-3.5" />
               <span>Download Update</span>
@@ -390,7 +390,7 @@ function handleResetVault() {
             <button
               v-else-if="updateState.status === 'downloaded'"
               @click="handleInstallUpdate"
-              class="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 transition shadow-sm animate-pulse"
+              class="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm animate-pulse"
             >
               <Sparkles class="w-3.5 h-3.5" />
               <span>Restart & Install</span>
@@ -400,7 +400,7 @@ function handleResetVault() {
             <button
               @click="handleCheckForUpdates"
               :disabled="isCheckingUpdates || updateState.status === 'checking' || updateState.status === 'downloading'"
-              class="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-xl bg-muted hover:bg-muted/80 text-foreground border border-border transition shadow-sm disabled:opacity-50"
+              class="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-xl bg-muted hover:bg-muted/80 text-foreground border border-border shadow-sm disabled:opacity-50"
             >
               <RefreshCw class="w-3.5 h-3.5" :class="{ 'animate-spin': isCheckingUpdates || updateState.status === 'checking' }" />
               <span>{{ isCheckingUpdates || updateState.status === 'checking' ? 'Checking...' : 'Check for Updates' }}</span>
@@ -409,7 +409,7 @@ function handleResetVault() {
             <!-- View on GitHub Releases -->
             <button
               @click="openExternal('https://github.com/mcfaith9/dbbcredentials/releases')"
-              class="p-2 text-xs rounded-xl bg-muted/60 hover:bg-muted text-muted-foreground hover:text-foreground border border-border transition"
+              class="p-2 text-xs rounded-xl bg-muted/60 hover:bg-muted text-muted-foreground hover:text-foreground border border-border"
               title="View all releases on GitHub (mcfaith9/dbbcredentials)"
             >
               <ExternalLink class="w-4 h-4" />
@@ -425,7 +425,7 @@ function handleResetVault() {
           </div>
           <div class="w-full h-2 rounded-full bg-muted overflow-hidden">
             <div
-              class="h-full bg-primary transition-all duration-300 rounded-full"
+              class="h-full bg-primary duration-300 rounded-full"
               :style="{ width: `${updateState.progress.percent}%` }"
             />
           </div>
@@ -435,7 +435,7 @@ function handleResetVault() {
         <div v-if="updateState.info?.releaseNotes" class="pt-3 border-t border-border space-y-2">
           <button
             @click="showReleaseNotes = !showReleaseNotes"
-            class="flex items-center justify-between w-full text-xs font-semibold text-muted-foreground hover:text-foreground transition"
+            class="flex items-center justify-between w-full text-xs font-semibold text-muted-foreground hover:text-foreground"
           >
             <span class="flex items-center gap-1.5">
               <Sparkles class="w-3.5 h-3.5 text-primary" />
@@ -478,7 +478,7 @@ function handleResetVault() {
               v-for="m in [1, 5, 15, 30, 60, 0]"
               :key="m"
               @click="setAutoLock(m)"
-              class="px-2.5 py-1 text-xs font-semibold rounded-lg transition"
+              class="px-2.5 py-1 text-xs font-semibold rounded-lg"
               :class="
                 settings.autoLockMinutes === m
                   ? 'bg-background text-foreground shadow-sm'
@@ -506,7 +506,7 @@ function handleResetVault() {
               v-for="s in [15, 30, 60, 0]"
               :key="s"
               @click="setClipboardTimeout(s)"
-              class="px-2.5 py-1 text-xs font-semibold rounded-lg transition"
+              class="px-2.5 py-1 text-xs font-semibold rounded-lg"
               :class="
                 settings.clipboardClearSeconds === s
                   ? 'bg-background text-foreground shadow-sm'
@@ -535,14 +535,14 @@ function handleResetVault() {
               type="password"
               placeholder="Current password"
               required
-              class="px-3.5 py-2 text-xs rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition"
+              class="px-3.5 py-2 text-xs rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary"
             />
             <input
               v-model="pwdForm.newPwd"
               type="password"
               placeholder="New password (min 6 chars)"
               required
-              class="px-3.5 py-2 text-xs rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition"
+              class="px-3.5 py-2 text-xs rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary"
             />
             <div class="flex gap-2">
               <input
@@ -550,12 +550,12 @@ function handleResetVault() {
                 type="password"
                 placeholder="Confirm new password"
                 required
-                class="flex-1 px-3.5 py-2 text-xs rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition"
+                class="flex-1 px-3.5 py-2 text-xs rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary"
               />
               <button
                 type="submit"
                 :disabled="pwdForm.loading"
-                class="px-4 py-2 bg-primary text-primary-foreground text-xs font-semibold rounded-xl hover:bg-primary/90 transition shadow-sm shrink-0"
+                class="px-4 py-2 bg-primary text-primary-foreground text-xs font-semibold rounded-xl hover:bg-primary/90 shadow-sm shrink-0"
               >
                 Update
               </button>
@@ -581,7 +581,7 @@ function handleResetVault() {
         <div class="grid grid-cols-3 gap-2 bg-muted p-1 rounded-xl">
           <button
             @click="setTheme('light')"
-            class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition"
+            class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg"
             :class="settings.theme === 'light' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'"
           >
             <Sun class="w-3.5 h-3.5" />
@@ -589,7 +589,7 @@ function handleResetVault() {
           </button>
           <button
             @click="setTheme('dark')"
-            class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition"
+            class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg"
             :class="settings.theme === 'dark' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'"
           >
             <Moon class="w-3.5 h-3.5" />
@@ -597,7 +597,7 @@ function handleResetVault() {
           </button>
           <button
             @click="setTheme('system')"
-            class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition"
+            class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg"
             :class="settings.theme === 'system' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'"
           >
             <Laptop class="w-3.5 h-3.5" />
@@ -642,7 +642,7 @@ function handleResetVault() {
               />
               <button
                 @click="handleExportBackup(true)"
-                class="flex items-center gap-1 px-3 py-1.5 bg-primary text-primary-foreground text-xs font-semibold rounded-lg hover:bg-primary/90 transition shadow-sm shrink-0"
+                class="flex items-center gap-1 px-3 py-1.5 bg-primary text-primary-foreground text-xs font-semibold rounded-lg hover:bg-primary/90 shadow-sm shrink-0"
               >
                 <Download class="w-3.5 h-3.5" />
                 <span>Backup</span>
@@ -661,7 +661,7 @@ function handleResetVault() {
             <button
               @click="triggerRestore"
               :disabled="isImporting"
-              class="w-full flex items-center justify-center gap-1.5 px-3 py-2 border border-border hover:bg-muted text-xs font-semibold rounded-lg text-foreground transition"
+              class="w-full flex items-center justify-center gap-1.5 px-3 py-2 border border-border hover:bg-muted text-xs font-semibold rounded-lg text-foreground"
             >
               <Upload class="w-3.5 h-3.5" />
               <span>Select File & Restore</span>
@@ -678,7 +678,7 @@ function handleResetVault() {
 
           <button
             @click="handleResetVault"
-            class="px-3 py-1.5 border border-rose-500/30 text-rose-600 dark:text-rose-400 hover:bg-rose-500/10 rounded-lg text-xs font-semibold transition"
+            class="px-3 py-1.5 border border-rose-500/30 text-rose-600 dark:text-rose-400 hover:bg-rose-500/10 rounded-lg text-xs font-semibold"
           >
             Reset Database
           </button>
@@ -708,7 +708,7 @@ function handleResetVault() {
           <div class="flex items-center gap-2">
             <button
               @click="handleTestNotification"
-              class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border bg-muted hover:bg-muted/80 text-foreground text-xs font-medium transition"
+              class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border bg-muted hover:bg-muted/80 text-foreground text-xs font-medium"
               title="Test OS Desktop Notification"
             >
               <Bell class="w-3.5 h-3.5 text-primary" />

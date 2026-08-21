@@ -259,7 +259,7 @@ function handleClose() {
           <!-- Download Template Buttons -->
           <button
             @click="downloadEmployeeTemplate('json')"
-            class="hidden sm:flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl border border-primary/30 bg-primary/5 hover:bg-primary/10 text-primary transition"
+            class="hidden sm:flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl border border-primary/30 bg-primary/5 hover:bg-primary/10 text-primary"
             title="Download sample JSON template"
           >
             <FileCode class="w-3.5 h-3.5" />
@@ -268,7 +268,7 @@ function handleClose() {
 
           <button
             @click="downloadEmployeeTemplate('xlsx')"
-            class="hidden md:flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl border border-border bg-background hover:bg-muted text-muted-foreground transition"
+            class="hidden md:flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl border border-border bg-background hover:bg-muted text-muted-foreground"
             title="Download sample Excel template"
           >
             <FileSpreadsheet class="w-3.5 h-3.5 text-emerald-500" />
@@ -277,7 +277,7 @@ function handleClose() {
 
           <button
             @click="handleClose"
-            class="p-2 text-muted-foreground hover:text-foreground rounded-lg hover:bg-muted transition"
+            class="p-2 text-muted-foreground hover:text-foreground rounded-lg hover:bg-muted"
           >
             <X class="w-4 h-4" />
           </button>
@@ -325,7 +325,7 @@ function handleClose() {
             @dragover.prevent="isDragging = true"
             @dragleave.prevent="isDragging = false"
             @drop.prevent="handleDrop"
-            class="w-full max-w-xl p-8 sm:p-12 rounded-3xl border-2 border-dashed transition-all flex flex-col items-center justify-center gap-4 cursor-pointer"
+            class="w-full max-w-xl p-8 sm:p-12 rounded-3xl border-2 border-dashed flex flex-col items-center justify-center gap-4 cursor-pointer"
             :class="
               isDragging
                 ? 'border-primary bg-primary/5 scale-[1.01]'
@@ -369,7 +369,7 @@ function handleClose() {
 
             <button
               type="button"
-              class="px-5 py-2.5 text-xs font-bold rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition shadow-sm"
+              class="px-5 py-2.5 text-xs font-bold rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm"
             >
               Browse Computer
             </button>
@@ -435,7 +435,7 @@ function handleClose() {
             <!-- Total -->
             <div
               @click="filterStatus = 'all'"
-              class="p-2.5 rounded-xl border cursor-pointer transition text-left"
+              class="p-2.5 rounded-xl border cursor-pointer text-left"
               :class="filterStatus === 'all' ? 'border-primary bg-primary/10 font-bold' : 'border-border bg-card/60 hover:bg-muted/40'"
             >
               <span class="text-[10px] text-muted-foreground block uppercase tracking-wider">Total Rows</span>
@@ -445,7 +445,7 @@ function handleClose() {
             <!-- New -->
             <div
               @click="filterStatus = 'new'"
-              class="p-2.5 rounded-xl border cursor-pointer transition text-left"
+              class="p-2.5 rounded-xl border cursor-pointer text-left"
               :class="filterStatus === 'new' ? 'border-emerald-500 bg-emerald-500/10 font-bold' : 'border-border bg-card/60 hover:bg-muted/40'"
             >
               <span class="text-[10px] text-emerald-600 block uppercase tracking-wider">New Employees</span>
@@ -455,7 +455,7 @@ function handleClose() {
             <!-- Exact Duplicates -->
             <div
               @click="filterStatus = 'exact'"
-              class="p-2.5 rounded-xl border cursor-pointer transition text-left"
+              class="p-2.5 rounded-xl border cursor-pointer text-left"
               :class="filterStatus === 'exact' ? 'border-rose-500 bg-rose-500/10 font-bold' : 'border-border bg-card/60 hover:bg-muted/40'"
             >
               <span class="text-[10px] text-rose-600 block uppercase tracking-wider">Exact Duplicates</span>
@@ -465,7 +465,7 @@ function handleClose() {
             <!-- Possible Duplicates -->
             <div
               @click="filterStatus = 'possible'"
-              class="p-2.5 rounded-xl border cursor-pointer transition text-left"
+              class="p-2.5 rounded-xl border cursor-pointer text-left"
               :class="filterStatus === 'possible' ? 'border-amber-500 bg-amber-500/10 font-bold' : 'border-border bg-card/60 hover:bg-muted/40'"
             >
               <span class="text-[10px] text-amber-600 block uppercase tracking-wider">Possible Matches</span>
@@ -475,7 +475,7 @@ function handleClose() {
             <!-- Incomplete / Warnings -->
             <div
               @click="filterStatus = 'incomplete'"
-              class="p-2.5 rounded-xl border cursor-pointer transition text-left"
+              class="p-2.5 rounded-xl border cursor-pointer text-left"
               :class="filterStatus === 'incomplete' ? 'border-yellow-500 bg-yellow-500/10 font-bold' : 'border-border bg-card/60 hover:bg-muted/40'"
             >
               <span class="text-[10px] text-yellow-600 block uppercase tracking-wider">Missing Key Data</span>
@@ -501,7 +501,7 @@ function handleClose() {
               <span class="text-[11px] font-semibold text-muted-foreground mr-1">Batch Actions:</span>
               <button
                 @click="setAllAction('merge', 'exact')"
-                class="px-2.5 py-1 text-[11px] font-semibold rounded-lg border border-border bg-background hover:bg-muted text-foreground transition"
+                class="px-2.5 py-1 text-[11px] font-semibold rounded-lg border border-border bg-background hover:bg-muted text-foreground"
                 title="Merge and fill empty fields for all exact duplicate records"
               >
                 Merge Exact Duplicates
@@ -509,7 +509,7 @@ function handleClose() {
 
               <button
                 @click="setAllAction('skip', 'exact')"
-                class="px-2.5 py-1 text-[11px] font-semibold rounded-lg border border-border bg-background hover:bg-muted text-foreground transition"
+                class="px-2.5 py-1 text-[11px] font-semibold rounded-lg border border-border bg-background hover:bg-muted text-foreground"
                 title="Skip all exact duplicate records"
               >
                 Skip Exact Duplicates
@@ -517,7 +517,7 @@ function handleClose() {
 
               <button
                 @click="setAllAction('new', 'new')"
-                class="px-2.5 py-1 text-[11px] font-semibold rounded-lg border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 transition"
+                class="px-2.5 py-1 text-[11px] font-semibold rounded-lg border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600"
               >
                 Import All New
               </button>
@@ -542,7 +542,7 @@ function handleClose() {
                 <tr
                   v-for="row in filteredAnalyzedRows"
                   :key="row.rowNumber"
-                  class="hover:bg-muted/30 transition group"
+                  class="hover:bg-muted/30 group"
                   :class="{
                     'bg-rose-500/5': row.confidence === 'exact',
                     'bg-amber-500/5': row.confidence === 'possible',
@@ -653,7 +653,7 @@ function handleClose() {
                   <td class="py-2.5 px-3 text-right">
                     <select
                       v-model="row.action"
-                      class="px-2 py-1 text-xs rounded-lg border border-input bg-card text-foreground font-semibold focus:outline-none focus:ring-1 focus:ring-primary/40 transition"
+                      class="px-2 py-1 text-xs rounded-lg border border-input bg-card text-foreground font-semibold focus:outline-none focus:ring-1 focus:ring-primary/40"
                       :class="{
                         'border-rose-500/40 text-rose-600': row.action === 'skip',
                         'border-emerald-500/40 text-emerald-600': row.action === 'new',
@@ -673,7 +673,7 @@ function handleClose() {
                     <button
                       v-if="row.matchedItem"
                       @click="inspectRowDiff(row)"
-                      class="p-1 text-muted-foreground hover:text-foreground rounded hover:bg-muted transition"
+                      class="p-1 text-muted-foreground hover:text-foreground rounded hover:bg-muted"
                       title="Inspect field differences and customize merge resolution"
                     >
                       <Eye class="w-3.5 h-3.5" />
@@ -730,7 +730,7 @@ function handleClose() {
           <button
             v-if="currentStep === 2"
             @click="currentStep = 1"
-            class="flex items-center gap-1 px-3 py-2 text-xs font-semibold rounded-xl border border-border bg-background hover:bg-muted text-foreground transition"
+            class="flex items-center gap-1 px-3 py-2 text-xs font-semibold rounded-xl border border-border bg-background hover:bg-muted text-foreground"
           >
             <ArrowLeft class="w-3.5 h-3.5" />
             <span>Upload Another File</span>
@@ -740,7 +740,7 @@ function handleClose() {
         <div class="flex items-center gap-2">
           <button
             @click="handleClose"
-            class="px-4 py-2 text-xs font-semibold rounded-xl border border-border bg-background hover:bg-muted text-foreground transition"
+            class="px-4 py-2 text-xs font-semibold rounded-xl border border-border bg-background hover:bg-muted text-foreground"
           >
             {{ currentStep === 3 ? 'Close' : 'Cancel' }}
           </button>
@@ -749,7 +749,7 @@ function handleClose() {
             v-if="currentStep === 2"
             @click="executeImport"
             :disabled="analyzedRows.length === 0 || isLoading"
-            class="flex items-center gap-1.5 px-5 py-2 text-xs font-bold rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition shadow-sm"
+            class="flex items-center gap-1.5 px-5 py-2 text-xs font-bold rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 shadow-sm"
           >
             <Check class="w-4 h-4" />
             <span>Execute Import ({{ analyzedRows.filter(r => r.action !== 'skip').length }} records)</span>

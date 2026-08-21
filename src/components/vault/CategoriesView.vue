@@ -95,11 +95,11 @@ function getIconComponent(iconName?: string) {
         @keydown.enter.prevent="handleAdd"
         type="text"
         placeholder="Enter new category name..."
-        class="flex-1 px-3.5 py-2 text-sm rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition"
+        class="flex-1 px-3.5 py-2 text-sm rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary"
       />
       <button
         @click="handleAdd"
-        class="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition shadow-sm shrink-0"
+        class="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm shrink-0"
       >
         <Plus class="w-4 h-4" />
         <span>Add Category</span>
@@ -111,17 +111,17 @@ function getIconComponent(iconName?: string) {
       <div
         v-for="cat in categoryStats"
         :key="cat.id"
-        class="p-4 rounded-xl border border-border bg-card hover:bg-muted/40 transition flex items-center justify-between group shadow-sm"
+        class="p-4 rounded-xl border border-border bg-card hover:bg-muted/40 flex items-center justify-between group shadow-sm"
       >
         <button
           @click="emit('select-category', cat.name)"
           class="flex items-center gap-3 text-left flex-1 min-w-0"
         >
-          <div class="p-2.5 rounded-lg bg-primary/10 text-primary shrink-0 group-hover:scale-105 transition-transform">
+          <div class="p-2.5 rounded-lg bg-primary/10 text-primary shrink-0 group-hover:scale-105-transform">
             <component :is="getIconComponent(cat.icon)" class="w-4 h-4" />
           </div>
           <div class="min-w-0">
-            <span class="text-sm font-semibold text-foreground truncate block group-hover:text-primary transition">
+            <span class="text-sm font-semibold text-foreground truncate block group-hover:text-primary">
               {{ cat.name }}
             </span>
             <span class="text-xs text-muted-foreground">
@@ -133,7 +133,7 @@ function getIconComponent(iconName?: string) {
         <button
           v-if="cat.is_custom"
           @click="handleDelete(cat.id, cat.name)"
-          class="opacity-0 group-hover:opacity-100 p-2 text-muted-foreground hover:text-rose-600 rounded-lg hover:bg-rose-500/10 transition"
+          class="opacity-0 group-hover:opacity-100 p-2 text-muted-foreground hover:text-rose-600 rounded-lg hover:bg-rose-500/10"
           title="Delete Category"
         >
           <Trash2 class="w-4 h-4" />

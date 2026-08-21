@@ -73,7 +73,7 @@ function handleNavClick(filter: VaultNavFilter) {
     <div class="p-3 border-b border-sidebar-border">
       <button
         @click="emit('add-item')"
-        class="w-full flex items-center justify-center gap-2 py-2 px-3 text-xs font-bold rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition shadow-sm"
+        class="w-full flex items-center justify-center gap-2 py-2 px-3 text-xs font-bold rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm"
       >
         <Plus class="w-4 h-4" />
         <span>New Credential (Ctrl+N)</span>
@@ -86,7 +86,7 @@ function handleNavClick(filter: VaultNavFilter) {
       <div class="space-y-0.5">
         <button
           @click="handleNavClick('dashboard')"
-          class="w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs font-medium transition"
+          class="w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs font-medium"
           :class="
             selectedFilter === 'dashboard'
               ? 'bg-sidebar-accent text-sidebar-accent-foreground font-bold shadow-xs'
@@ -109,7 +109,7 @@ function handleNavClick(filter: VaultNavFilter) {
         <!-- All Items -->
         <button
           @click="handleNavClick('all')"
-          class="w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs font-medium transition"
+          class="w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs font-medium"
           :class="
             selectedFilter === 'all' && !selectedCategory && !selectedTag
               ? 'bg-sidebar-accent text-sidebar-accent-foreground font-bold shadow-xs'
@@ -128,7 +128,7 @@ function handleNavClick(filter: VaultNavFilter) {
         <!-- Passwords / Logins -->
         <button
           @click="handleNavClick('passwords')"
-          class="w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs font-medium transition"
+          class="w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs font-medium"
           :class="
             selectedFilter === 'passwords'
               ? 'bg-sidebar-accent text-sidebar-accent-foreground font-bold shadow-xs'
@@ -147,7 +147,7 @@ function handleNavClick(filter: VaultNavFilter) {
         <!-- Email Accounts -->
         <button
           @click="handleNavClick('email_accounts')"
-          class="w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs font-medium transition"
+          class="w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs font-medium"
           :class="
             selectedFilter === 'email_accounts'
               ? 'bg-sidebar-accent text-sidebar-accent-foreground font-bold shadow-xs'
@@ -166,7 +166,7 @@ function handleNavClick(filter: VaultNavFilter) {
         <!-- Social Accounts -->
         <button
           @click="handleNavClick('social_accounts')"
-          class="w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs font-medium transition"
+          class="w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs font-medium"
           :class="
             selectedFilter === 'social_accounts'
               ? 'bg-sidebar-accent text-sidebar-accent-foreground font-bold shadow-xs'
@@ -185,7 +185,7 @@ function handleNavClick(filter: VaultNavFilter) {
         <!-- Company Accounts -->
         <button
           @click="handleNavClick('company_accounts')"
-          class="w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs font-medium transition"
+          class="w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs font-medium"
           :class="
             selectedFilter === 'company_accounts'
               ? 'bg-sidebar-accent text-sidebar-accent-foreground font-bold shadow-xs'
@@ -211,7 +211,7 @@ function handleNavClick(filter: VaultNavFilter) {
         <!-- PC / Computers -->
         <button
           @click="handleNavClick('pc_computers')"
-          class="w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs font-medium transition"
+          class="w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs font-medium"
           :class="
             selectedFilter === 'pc_computers'
               ? 'bg-sidebar-accent text-sidebar-accent-foreground font-bold shadow-xs'
@@ -230,7 +230,7 @@ function handleNavClick(filter: VaultNavFilter) {
         <!-- Servers -->
         <button
           @click="handleNavClick('servers')"
-          class="w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs font-medium transition"
+          class="w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs font-medium"
           :class="
             selectedFilter === 'servers'
               ? 'bg-sidebar-accent text-sidebar-accent-foreground font-bold shadow-xs'
@@ -249,7 +249,7 @@ function handleNavClick(filter: VaultNavFilter) {
         <!-- Wi-Fi Networks -->
         <button
           @click="handleNavClick('wifi')"
-          class="w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs font-medium transition"
+          class="w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs font-medium"
           :class="
             selectedFilter === 'wifi'
               ? 'bg-sidebar-accent text-sidebar-accent-foreground font-bold shadow-xs'
@@ -275,7 +275,7 @@ function handleNavClick(filter: VaultNavFilter) {
         <!-- Domains -->
         <button
           @click="handleNavClick('domains')"
-          class="w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs font-medium transition"
+          class="w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs font-medium"
           :class="
             selectedFilter === 'domains'
               ? 'bg-sidebar-accent text-sidebar-accent-foreground font-bold shadow-xs'
@@ -301,7 +301,7 @@ function handleNavClick(filter: VaultNavFilter) {
         <!-- Web Hosting -->
         <button
           @click="handleNavClick('hosting')"
-          class="w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs font-medium transition"
+          class="w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs font-medium"
           :class="
             selectedFilter === 'hosting'
               ? 'bg-sidebar-accent text-sidebar-accent-foreground font-bold shadow-xs'
@@ -320,7 +320,7 @@ function handleNavClick(filter: VaultNavFilter) {
         <!-- Software Licenses -->
         <button
           @click="handleNavClick('software_licenses')"
-          class="w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs font-medium transition"
+          class="w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs font-medium"
           :class="
             selectedFilter === 'software_licenses'
               ? 'bg-sidebar-accent text-sidebar-accent-foreground font-bold shadow-xs'
@@ -353,7 +353,7 @@ function handleNavClick(filter: VaultNavFilter) {
         <!-- Secure Notes -->
         <button
           @click="handleNavClick('notes')"
-          class="w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs font-medium transition"
+          class="w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs font-medium"
           :class="
             selectedFilter === 'notes'
               ? 'bg-sidebar-accent text-sidebar-accent-foreground font-bold shadow-xs'
@@ -372,7 +372,7 @@ function handleNavClick(filter: VaultNavFilter) {
         <!-- Employee Identities -->
         <button
           @click="handleNavClick('identities')"
-          class="w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs font-medium transition"
+          class="w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs font-medium"
           :class="
             selectedFilter === 'identities'
               ? 'bg-sidebar-accent text-sidebar-accent-foreground font-bold shadow-xs'
@@ -391,7 +391,7 @@ function handleNavClick(filter: VaultNavFilter) {
         <!-- Categories -->
         <button
           @click="handleNavClick('categories')"
-          class="w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs font-medium transition"
+          class="w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs font-medium"
           :class="
             selectedFilter === 'categories'
               ? 'bg-sidebar-accent text-sidebar-accent-foreground font-bold shadow-xs'
@@ -410,7 +410,7 @@ function handleNavClick(filter: VaultNavFilter) {
         <!-- Tags -->
         <button
           @click="handleNavClick('tags')"
-          class="w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs font-medium transition"
+          class="w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs font-medium"
           :class="
             selectedFilter === 'tags'
               ? 'bg-sidebar-accent text-sidebar-accent-foreground font-bold shadow-xs'
@@ -436,7 +436,7 @@ function handleNavClick(filter: VaultNavFilter) {
         <!-- Favorites -->
         <button
           @click="handleNavClick('favorites')"
-          class="w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs font-medium transition"
+          class="w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs font-medium"
           :class="
             selectedFilter === 'favorites'
               ? 'bg-sidebar-accent text-sidebar-accent-foreground font-bold shadow-xs'
@@ -455,7 +455,7 @@ function handleNavClick(filter: VaultNavFilter) {
         <!-- Security Audit -->
         <button
           @click="handleNavClick('security')"
-          class="w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs font-medium transition"
+          class="w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs font-medium"
           :class="
             selectedFilter === 'security'
               ? 'bg-sidebar-accent text-sidebar-accent-foreground font-bold shadow-xs'
@@ -483,7 +483,7 @@ function handleNavClick(filter: VaultNavFilter) {
         <!-- Generator Tool -->
         <button
           @click="emit('open-generator')"
-          class="w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs font-medium text-sidebar-foreground/80 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground transition"
+          class="w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs font-medium text-sidebar-foreground/80 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
         >
           <div class="flex items-center gap-2.5">
             <Sparkles class="w-4 h-4 text-indigo-400" />
@@ -494,7 +494,7 @@ function handleNavClick(filter: VaultNavFilter) {
         <!-- Backup & Restore -->
         <button
           @click="handleNavClick('backup')"
-          class="w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs font-medium transition"
+          class="w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs font-medium"
           :class="
             selectedFilter === 'backup'
               ? 'bg-sidebar-accent text-sidebar-accent-foreground font-bold shadow-xs'
@@ -510,7 +510,7 @@ function handleNavClick(filter: VaultNavFilter) {
         <!-- Trash -->
         <button
           @click="handleNavClick('trash')"
-          class="w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs font-medium transition"
+          class="w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs font-medium"
           :class="
             selectedFilter === 'trash'
               ? 'bg-sidebar-accent text-sidebar-accent-foreground font-bold shadow-xs'
@@ -532,7 +532,7 @@ function handleNavClick(filter: VaultNavFilter) {
         <!-- Settings -->
         <button
           @click="handleNavClick('settings')"
-          class="w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs font-medium transition"
+          class="w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs font-medium"
           :class="
             selectedFilter === 'settings'
               ? 'bg-sidebar-accent text-sidebar-accent-foreground font-bold shadow-xs'
@@ -555,7 +555,7 @@ function handleNavClick(filter: VaultNavFilter) {
         </div>
         <div class="min-w-0">
           <span class="text-xs font-bold text-sidebar-foreground truncate block">{{ currentUsername }}</span>
-          <span class="text-[10px] text-muted-foreground block truncate">Company Vault Admin</span>
+          <span class="text-[10px] text-muted-foreground block truncate">info@dmbbcontractor.com</span>
         </div>
       </div>
     </div>

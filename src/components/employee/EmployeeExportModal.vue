@@ -78,7 +78,7 @@ function handleClose() {
 
         <button
           @click="handleClose"
-          class="p-2 text-muted-foreground hover:text-foreground rounded-lg hover:bg-muted transition"
+          class="p-2 text-muted-foreground hover:text-foreground rounded-lg hover:bg-muted"
         >
           <X class="w-4 h-4" />
         </button>
@@ -92,7 +92,7 @@ function handleClose() {
           <div class="grid grid-cols-1 gap-2">
             <!-- All -->
             <label
-              class="flex items-center justify-between p-3 rounded-xl border cursor-pointer transition"
+              class="flex items-center justify-between p-3 rounded-xl border cursor-pointer"
               :class="
                 exportScope === 'all'
                   ? 'border-primary bg-primary/5 text-foreground'
@@ -118,7 +118,7 @@ function handleClose() {
 
             <!-- Filtered -->
             <label
-              class="flex items-center justify-between p-3 rounded-xl border cursor-pointer transition"
+              class="flex items-center justify-between p-3 rounded-xl border cursor-pointer"
               :class="
                 exportScope === 'filtered'
                   ? 'border-primary bg-primary/5 text-foreground'
@@ -145,7 +145,7 @@ function handleClose() {
             <!-- Selected -->
             <label
               v-if="selectedIds.length > 0"
-              class="flex items-center justify-between p-3 rounded-xl border cursor-pointer transition"
+              class="flex items-center justify-between p-3 rounded-xl border cursor-pointer"
               :class="
                 exportScope === 'selected'
                   ? 'border-primary bg-primary/5 text-foreground'
@@ -179,7 +179,7 @@ function handleClose() {
             <button
               type="button"
               @click="format = 'json'"
-              class="p-2.5 rounded-xl border text-left flex flex-col gap-1.5 transition"
+              class="p-2.5 rounded-xl border text-left flex flex-col gap-1.5"
               :class="
                 format === 'json'
                   ? 'border-primary bg-primary/10 text-primary font-bold'
@@ -200,7 +200,7 @@ function handleClose() {
             <button
               type="button"
               @click="format = 'xlsx'"
-              class="p-2.5 rounded-xl border text-left flex flex-col gap-1.5 transition"
+              class="p-2.5 rounded-xl border text-left flex flex-col gap-1.5"
               :class="
                 format === 'xlsx'
                   ? 'border-emerald-500 bg-emerald-500/10 text-emerald-600 font-bold'
@@ -221,7 +221,7 @@ function handleClose() {
             <button
               type="button"
               @click="format = 'csv'"
-              class="p-2.5 rounded-xl border text-left flex flex-col gap-1.5 transition"
+              class="p-2.5 rounded-xl border text-left flex flex-col gap-1.5"
               :class="
                 format === 'csv'
                   ? 'border-blue-500 bg-blue-500/10 text-blue-600 font-bold'
@@ -260,14 +260,14 @@ function handleClose() {
         <div class="flex items-center gap-2">
           <button
             @click="handleClose"
-            class="px-4 py-2 text-xs font-semibold rounded-xl border border-border bg-background hover:bg-muted text-foreground transition"
+            class="px-4 py-2 text-xs font-semibold rounded-xl border border-border bg-background hover:bg-muted text-foreground"
           >
             Cancel
           </button>
           <button
             @click="handleExport"
             :disabled="targetItems.length === 0"
-            class="flex items-center gap-1.5 px-4 py-2 text-xs font-bold rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition shadow-sm"
+            class="flex items-center gap-1.5 px-4 py-2 text-xs font-bold rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 shadow-sm"
           >
             <Download class="w-4 h-4" />
             <span>Export Now</span>

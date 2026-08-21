@@ -38,7 +38,7 @@ const isMac = computed(() => platform.value === 'darwin')
         <button
           id="mac-btn-close"
           @click="closeWindow"
-          class="w-3 h-3 rounded-full bg-red-500 hover:bg-red-600 active:bg-red-700 transition flex items-center justify-center group"
+          class="w-3 h-3 rounded-full bg-red-500 hover:bg-red-600 active:bg-red-700 flex items-center justify-center group"
           title="Close Window"
         >
           <X class="w-2 h-2 text-red-950 opacity-0 group-hover:opacity-100" />
@@ -46,7 +46,7 @@ const isMac = computed(() => platform.value === 'darwin')
         <button
           id="mac-btn-min"
           @click="minimizeWindow"
-          class="w-3 h-3 rounded-full bg-amber-500 hover:bg-amber-600 active:bg-amber-700 transition flex items-center justify-center group"
+          class="w-3 h-3 rounded-full bg-amber-500 hover:bg-amber-600 active:bg-amber-700 flex items-center justify-center group"
           title="Minimize Window"
         >
           <Minus class="w-2 h-2 text-amber-950 opacity-0 group-hover:opacity-100" />
@@ -54,7 +54,7 @@ const isMac = computed(() => platform.value === 'darwin')
         <button
           id="mac-btn-max"
           @click="toggleMaximizeWindow"
-          class="w-3 h-3 rounded-full bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 transition flex items-center justify-center group"
+          class="w-3 h-3 rounded-full bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 flex items-center justify-center group"
           title="Maximize Window"
         >
           <Square class="w-2 h-2 text-emerald-950 opacity-0 group-hover:opacity-100" />
@@ -101,7 +101,7 @@ const isMac = computed(() => platform.value === 'darwin')
         v-if="isAuthenticated"
         id="titlebar-lock-btn"
         @click="lock('User locked from titlebar')"
-        class="p-1 rounded text-zinc-400 hover:text-amber-300 hover:bg-zinc-850 transition"
+        class="p-1 rounded text-zinc-400 hover:text-amber-300 hover:bg-zinc-850"
         title="Lock Vault Instantly"
       >
         <Lock class="w-3.5 h-3.5" />
@@ -112,7 +112,7 @@ const isMac = computed(() => platform.value === 'darwin')
         <button
           id="win-btn-min"
           @click="minimizeWindow"
-          class="w-7 h-7 flex items-center justify-center rounded hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 transition"
+          class="w-7 h-7 flex items-center justify-center rounded hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200"
           title="Minimize"
         >
           <Minus class="w-3.5 h-3.5" />
@@ -120,7 +120,7 @@ const isMac = computed(() => platform.value === 'darwin')
         <button
           id="win-btn-max"
           @click="toggleMaximizeWindow"
-          class="w-7 h-7 flex items-center justify-center rounded hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 transition"
+          class="w-7 h-7 flex items-center justify-center rounded hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200"
           title="Maximize / Restore"
         >
           <Copy v-if="isMaximized" class="w-3 h-3 rotate-180" />
@@ -129,7 +129,7 @@ const isMac = computed(() => platform.value === 'darwin')
         <button
           id="win-btn-close"
           @click="closeWindow"
-          class="w-7 h-7 flex items-center justify-center rounded hover:bg-red-600 text-zinc-400 hover:text-white transition"
+          class="w-7 h-7 flex items-center justify-center rounded hover:bg-red-600 text-zinc-400 hover:text-white"
           title="Close"
         >
           <X class="w-3.5 h-3.5" />

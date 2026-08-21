@@ -128,7 +128,7 @@ const scoreMessage = computed(() => {
         <div
           v-for="item in securityReport.weakItems"
           :key="item.id"
-          class="p-4 rounded-xl border border-border bg-card hover:bg-muted/40 transition flex items-center justify-between gap-4"
+          class="p-4 rounded-xl border border-border bg-card hover:bg-muted/40 flex items-center justify-between gap-4"
         >
           <div class="flex items-center gap-3 min-w-0">
             <div class="p-2 rounded-lg bg-rose-500/10 text-rose-500 shrink-0">
@@ -143,7 +143,7 @@ const scoreMessage = computed(() => {
           <div class="flex items-center gap-2 shrink-0">
             <button
               @click="emit('edit', item)"
-              class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition shadow-sm"
+              class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm"
             >
               <Edit class="w-3.5 h-3.5" />
               <span>Update Password</span>

@@ -147,7 +147,7 @@ function handleTrash() {
       <div class="flex items-center gap-1.5 shrink-0">
         <button
           @click="handleFavorite"
-          class="p-2 rounded-xl border border-border hover:bg-muted text-muted-foreground transition"
+          class="p-2 rounded-xl border border-border hover:bg-muted text-muted-foreground"
           :class="{ 'text-amber-500 bg-amber-500/10 border-amber-500/30': item.favorite }"
           title="Favorite"
         >
@@ -156,7 +156,7 @@ function handleTrash() {
 
         <button
           @click="emit('edit', item)"
-          class="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-xl border border-border bg-background hover:bg-muted text-foreground transition"
+          class="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-xl border border-border bg-background hover:bg-muted text-foreground"
           title="Edit"
         >
           <Edit class="w-3.5 h-3.5" />
@@ -165,7 +165,7 @@ function handleTrash() {
 
         <button
           @click="handleTrash"
-          class="p-2 rounded-xl border border-border hover:bg-rose-500/10 text-muted-foreground hover:text-rose-600 hover:border-rose-500/30 transition"
+          class="p-2 rounded-xl border border-border hover:bg-rose-500/10 text-muted-foreground hover:text-rose-600 hover:border-rose-500/30"
           title="Move to Trash"
         >
           <Trash2 class="w-4 h-4" />
@@ -219,7 +219,7 @@ function handleTrash() {
             :href="item.website_url"
             target="_blank"
             rel="noreferrer"
-            class="p-2 text-muted-foreground hover:text-foreground rounded-lg hover:bg-muted transition shrink-0"
+            class="p-2 text-muted-foreground hover:text-foreground rounded-lg hover:bg-muted shrink-0"
             title="Open Link"
           >
             <ExternalLink class="w-4 h-4" />
@@ -237,7 +237,7 @@ function handleTrash() {
           </div>
           <button
             @click="copyValue(item.username, 'Username', 'username', false)"
-            class="p-2 text-muted-foreground hover:text-foreground rounded-lg hover:bg-muted transition shrink-0"
+            class="p-2 text-muted-foreground hover:text-foreground rounded-lg hover:bg-muted shrink-0"
             title="Copy Username"
           >
             <Check v-if="copiedField === 'username'" class="w-4 h-4 text-emerald-600" />
@@ -256,7 +256,7 @@ function handleTrash() {
           </div>
           <button
             @click="copyValue(item.email, 'Email', 'email', false)"
-            class="p-2 text-muted-foreground hover:text-foreground rounded-lg hover:bg-muted transition shrink-0"
+            class="p-2 text-muted-foreground hover:text-foreground rounded-lg hover:bg-muted shrink-0"
             title="Copy Email"
           >
             <Check v-if="copiedField === 'email'" class="w-4 h-4 text-emerald-600" />
@@ -664,7 +664,7 @@ function handleTrash() {
         <div v-if="item.license_key" class="p-3.5 rounded-xl border border-border bg-card/60 flex items-center justify-between">
           <div class="min-w-0 flex-1 mr-2">
             <span class="text-[11px] font-medium text-muted-foreground block">License Key / Activation Key</span>
-            <span class="text-sm font-mono font-bold text-foreground break-all select-all">{{ item.license_key }}</span>
+            <span class="text-sm font-mono font-bold text-foreground break select">{{ item.license_key }}</span>
           </div>
           <button @click="copyValue(item.license_key, 'License Key', 'lic_key', true)" class="p-2 text-muted-foreground hover:text-foreground shrink-0">
             <Check v-if="copiedField === 'lic_key'" class="w-4 h-4 text-emerald-600" />
@@ -702,7 +702,7 @@ function handleTrash() {
               <span>Copy Note</span>
             </button>
           </div>
-          <pre class="text-xs sm:text-sm font-mono whitespace-pre-wrap leading-relaxed text-foreground select-all">{{
+          <pre class="text-xs sm:text-sm font-mono whitespace-pre-wrap leading-relaxed text-foreground select">{{
             item.content || '(Empty secure note)'
           }}</pre>
         </div>
@@ -869,7 +869,7 @@ function handleTrash() {
             <KeyRound class="w-4 h-4 text-muted-foreground shrink-0" />
             <div class="min-w-0 flex-1">
               <span class="text-[11px] font-medium text-muted-foreground block">Password / Secret Key</span>
-              <span v-if="showPassword" class="text-sm font-mono font-medium text-foreground break-all select-all block">
+              <span v-if="showPassword" class="text-sm font-mono font-medium text-foreground break select block">
                 {{ item.password }}
               </span>
               <span v-else class="text-sm font-mono font-bold tracking-widest text-muted-foreground select-none block">
@@ -881,7 +881,7 @@ function handleTrash() {
           <div class="flex items-center gap-1 shrink-0">
             <button
               @click="showPassword = !showPassword"
-              class="p-2 text-muted-foreground hover:text-foreground rounded-lg hover:bg-muted transition"
+              class="p-2 text-muted-foreground hover:text-foreground rounded-lg hover:bg-muted"
               title="Toggle Visibility"
             >
               <EyeOff v-if="showPassword" class="w-4 h-4" />
@@ -889,7 +889,7 @@ function handleTrash() {
             </button>
             <button
               @click="copyValue(item.password, 'Password', 'sub_password', true)"
-              class="p-2 text-muted-foreground hover:text-foreground rounded-lg hover:bg-muted transition"
+              class="p-2 text-muted-foreground hover:text-foreground rounded-lg hover:bg-muted"
               title="Copy Password"
             >
               <Check v-if="copiedField === 'sub_password'" class="w-4 h-4 text-emerald-600" />

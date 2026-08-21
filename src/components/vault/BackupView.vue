@@ -258,7 +258,7 @@ function resetImportState() {
                 type="password"
                 required
                 placeholder="Enter strong encryption passphrase"
-                class="w-full px-3.5 py-2 text-xs rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition"
+                class="w-full px-3.5 py-2 text-xs rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary"
               />
             </div>
 
@@ -269,7 +269,7 @@ function resetImportState() {
                 type="password"
                 required
                 placeholder="Re-enter encryption passphrase"
-                class="w-full px-3.5 py-2 text-xs rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition"
+                class="w-full px-3.5 py-2 text-xs rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary"
               />
             </div>
 
@@ -277,7 +277,7 @@ function resetImportState() {
               <button
                 type="submit"
                 :disabled="isExporting || !exportPassphrase || exportPassphrase !== confirmExportPassphrase"
-                class="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-bold rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition shadow-sm disabled:opacity-50"
+                class="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-bold rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm disabled:opacity-50"
               >
                 <Lock class="w-4 h-4" />
                 <span v-if="isExporting">Encrypting Vault...</span>
@@ -324,7 +324,7 @@ function resetImportState() {
           <div
             v-if="!previewData && !importResult"
             @click="importFileInput?.click()"
-            class="p-6 rounded-xl border-2 border-dashed border-border hover:border-primary/60 bg-muted/20 hover:bg-muted/40 cursor-pointer text-center space-y-2 transition"
+            class="p-6 rounded-xl border-2 border-dashed border-border hover:border-primary/60 bg-muted/20 hover:bg-muted/40 cursor-pointer text-center space-y-2"
           >
             <input
               ref="importFileInput"
@@ -362,12 +362,12 @@ function resetImportState() {
                 @keydown.enter.prevent="handleUnlockBackup"
                 type="password"
                 placeholder="Enter backup passphrase"
-                class="flex-1 px-3 py-1.5 text-xs rounded-lg border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition"
+                class="flex-1 px-3 py-1.5 text-xs rounded-lg border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary"
               />
               <button
                 @click="handleUnlockBackup"
                 :disabled="isAnalyzing || !importPassphrase"
-                class="px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition disabled:opacity-50"
+                class="px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
               >
                 Unlock
               </button>
@@ -392,7 +392,7 @@ function resetImportState() {
               <label class="text-xs font-semibold text-foreground">Conflict Resolution Strategy</label>
               <div class="grid grid-cols-3 gap-2">
                 <label
-                  class="p-2 rounded-lg border text-center cursor-pointer text-xs font-medium transition"
+                  class="p-2 rounded-lg border text-center cursor-pointer text-xs font-medium"
                   :class="
                     importStrategy === 'update'
                       ? 'border-primary bg-primary/10 text-primary font-bold'
@@ -404,7 +404,7 @@ function resetImportState() {
                 </label>
 
                 <label
-                  class="p-2 rounded-lg border text-center cursor-pointer text-xs font-medium transition"
+                  class="p-2 rounded-lg border text-center cursor-pointer text-xs font-medium"
                   :class="
                     importStrategy === 'new'
                       ? 'border-primary bg-primary/10 text-primary font-bold'
@@ -416,7 +416,7 @@ function resetImportState() {
                 </label>
 
                 <label
-                  class="p-2 rounded-lg border text-center cursor-pointer text-xs font-medium transition"
+                  class="p-2 rounded-lg border text-center cursor-pointer text-xs font-medium"
                   :class="
                     importStrategy === 'skip'
                       ? 'border-primary bg-primary/10 text-primary font-bold'
@@ -433,7 +433,7 @@ function resetImportState() {
             <button
               @click="handleExecuteImport"
               :disabled="isImporting"
-              class="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-bold rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition shadow-sm disabled:opacity-50"
+              class="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-bold rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm disabled:opacity-50"
             >
               <CheckCircle2 class="w-4 h-4" />
               <span v-if="isImporting">Importing Credentials...</span>

@@ -90,7 +90,7 @@ function handleClose() {
 
         <button
           @click="handleClose"
-          class="p-2 text-muted-foreground hover:text-foreground rounded-lg hover:bg-muted transition"
+          class="p-2 text-muted-foreground hover:text-foreground rounded-lg hover:bg-muted"
         >
           <X class="w-4 h-4" />
         </button>
@@ -112,13 +112,13 @@ function handleClose() {
         <div class="flex items-center gap-2">
           <button
             @click="pickAllExisting"
-            class="px-2.5 py-1 text-[11px] font-semibold rounded-lg border border-border bg-background hover:bg-muted text-foreground transition"
+            class="px-2.5 py-1 text-[11px] font-semibold rounded-lg border border-border bg-background hover:bg-muted text-foreground"
           >
             Keep All Existing
           </button>
           <button
             @click="pickAllImported"
-            class="px-2.5 py-1 text-[11px] font-semibold rounded-lg border border-primary/30 bg-primary/10 hover:bg-primary/20 text-primary transition"
+            class="px-2.5 py-1 text-[11px] font-semibold rounded-lg border border-primary/30 bg-primary/10 hover:bg-primary/20 text-primary"
           >
             Overwrite with Imported
           </button>
@@ -140,7 +140,7 @@ function handleClose() {
             <tr
               v-for="f in EMPLOYEE_FIELDS"
               :key="f.key"
-              class="hover:bg-muted/30 transition"
+              class="hover:bg-muted/30"
               :class="{
                 'bg-amber-500/5':
                   getExistingValue(f.key) &&
@@ -157,7 +157,7 @@ function handleClose() {
                 <div
                   v-if="getExistingValue(f.key)"
                   @click="pickValue(f.key, getExistingValue(f.key))"
-                  class="p-1.5 rounded-lg border cursor-pointer transition text-xs flex items-center justify-between gap-1"
+                  class="p-1.5 rounded-lg border cursor-pointer text-xs flex items-center justify-between gap-1"
                   :class="
                     (localResolutions[f.key] || getExistingValue(f.key)) === getExistingValue(f.key)
                       ? 'border-primary bg-primary/10 text-foreground font-bold'
@@ -178,7 +178,7 @@ function handleClose() {
                 <div
                   v-if="getImportedValue(f.key)"
                   @click="pickValue(f.key, getImportedValue(f.key))"
-                  class="p-1.5 rounded-lg border cursor-pointer transition text-xs flex items-center justify-between gap-1"
+                  class="p-1.5 rounded-lg border cursor-pointer text-xs flex items-center justify-between gap-1"
                   :class="
                     localResolutions[f.key] === getImportedValue(f.key)
                       ? 'border-primary bg-primary/10 text-foreground font-bold'
@@ -217,13 +217,13 @@ function handleClose() {
         <div class="flex items-center gap-2">
           <button
             @click="handleClose"
-            class="px-4 py-2 text-xs font-semibold rounded-xl border border-border bg-background hover:bg-muted text-foreground transition"
+            class="px-4 py-2 text-xs font-semibold rounded-xl border border-border bg-background hover:bg-muted text-foreground"
           >
             Cancel
           </button>
           <button
             @click="handleSave"
-            class="px-4 py-2 text-xs font-bold rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition shadow-sm"
+            class="px-4 py-2 text-xs font-bold rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm"
           >
             Apply Resolution
           </button>

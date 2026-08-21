@@ -4,6 +4,7 @@ import { generatePassword, calculatePasswordStrength } from '@/services/crypto'
 import { useClipboard } from '@/composables/useClipboard'
 import type { GeneratorOptions } from '@/types'
 import { RefreshCw, Copy, Check, ShieldCheck, KeyRound, X } from '@lucide/vue'
+import { Checkbox } from '@/components/ui/checkbox'
 
 const props = defineProps<{
   open: boolean
@@ -124,7 +125,7 @@ function close() {
       <!-- Generated Password Box -->
       <div class="space-y-4">
         <div
-          class="relative flex items-center justify-between p-3.5 bg-muted/70 dark:bg-muted/40 border border-border rounded-xl font-mono text-sm sm:text-base break-all select-all font-medium text-foreground transition-all"
+          class="relative flex items-center justify-between p-3.5 bg-muted/70 dark:bg-muted/40 border border-border rounded-xl font-mono text-sm sm:text-base break select font-medium text-foreground transition"
         >
           <span class="tracking-wider pr-16">{{ generatedPassword || 'Generating...' }}</span>
           <div class="absolute right-2 flex items-center gap-1">
@@ -158,7 +159,7 @@ function close() {
 
           <div class="h-2 w-full bg-muted rounded-full overflow-hidden flex gap-1 p-0.5">
             <div
-              class="h-full rounded-full transition-all duration-300"
+              class="h-full rounded-full transition duration-300"
               :class="{
                 'bg-rose-500': strength.level === 'very-weak' || strength.level === 'weak',
                 'bg-amber-500': strength.level === 'fair',
@@ -198,25 +199,26 @@ function close() {
             <label
               class="flex items-center gap-2.5 p-2.5 rounded-lg border border-border bg-card hover:bg-muted/50 cursor-pointer text-xs font-medium text-foreground transition"
             >
-              <input type="checkbox" v-model="options.uppercase" class="rounded border-border text-primary focus:ring-primary h-4 w-4" />
+
+              <Checkbox v-model="options.uppercase" />
               <span>Uppercase (A-Z)</span>
             </label>
             <label
               class="flex items-center gap-2.5 p-2.5 rounded-lg border border-border bg-card hover:bg-muted/50 cursor-pointer text-xs font-medium text-foreground transition"
             >
-              <input type="checkbox" v-model="options.lowercase" class="rounded border-border text-primary focus:ring-primary h-4 w-4" />
+              <Checkbox v-model="options.lowercase" />
               <span>Lowercase (a-z)</span>
             </label>
             <label
               class="flex items-center gap-2.5 p-2.5 rounded-lg border border-border bg-card hover:bg-muted/50 cursor-pointer text-xs font-medium text-foreground transition"
             >
-              <input type="checkbox" v-model="options.numbers" class="rounded border-border text-primary focus:ring-primary h-4 w-4" />
+              <Checkbox v-model="options.numbers" />
               <span>Numbers (0-9)</span>
             </label>
             <label
               class="flex items-center gap-2.5 p-2.5 rounded-lg border border-border bg-card hover:bg-muted/50 cursor-pointer text-xs font-medium text-foreground transition"
             >
-              <input type="checkbox" v-model="options.symbols" class="rounded border-border text-primary focus:ring-primary h-4 w-4" />
+              <Checkbox v-model="options.symbols" />
               <span>Symbols (!@#$)</span>
             </label>
           </div>
@@ -225,7 +227,7 @@ function close() {
           <label
             class="flex items-center gap-2.5 p-2.5 rounded-lg border border-border bg-card hover:bg-muted/50 cursor-pointer text-xs font-medium text-foreground transition"
           >
-            <input type="checkbox" v-model="options.excludeAmbiguous" class="rounded border-border text-primary focus:ring-primary h-4 w-4" />
+            <Checkbox v-model="options.excludeAmbiguous" />
             <span>Exclude Ambiguous Characters (e.g. 0, O, 1, l, I)</span>
           </label>
         </div>

@@ -52,7 +52,7 @@ const { copyToClipboard } = useClipboard()
       <div class="flex items-center gap-2.5">
         <button
           @click="emit('open-generator')"
-          class="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-xl border border-border bg-card hover:bg-muted text-foreground transition"
+          class="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-xl border border-border bg-card hover:bg-muted text-foreground"
         >
           <Sparkles class="w-3.5 h-3.5 text-primary" />
           <span>Password Generator</span>
@@ -60,7 +60,7 @@ const { copyToClipboard } = useClipboard()
 
         <button
           @click="emit('add', 'password')"
-          class="flex items-center gap-1.5 px-4 py-2 text-xs font-bold rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition shadow-sm"
+          class="flex items-center gap-1.5 px-4 py-2 text-xs font-bold rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm"
         >
           <Plus class="w-4 h-4" />
           <span>New Credential</span>
@@ -100,7 +100,7 @@ const { copyToClipboard } = useClipboard()
         <div
           v-for="item in [...expirationAlerts.domains, ...expirationAlerts.licenses].slice(0, 3)"
           :key="item.id"
-          class="p-2.5 rounded-xl border border-amber-500/20 bg-card/60 flex items-center justify-between hover:bg-card cursor-pointer transition text-xs"
+          class="p-2.5 rounded-xl border border-amber-500/20 bg-card/60 flex items-center justify-between hover:bg-card cursor-pointer text-xs"
         >
           <div class="flex items-center gap-2 min-w-0">
             <CredentialTypeIcon :type="item.type" size="sm" />
@@ -120,11 +120,11 @@ const { copyToClipboard } = useClipboard()
     <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
       <!-- Total Records -->
       <div
-        class="p-4 rounded-xl border border-border bg-card hover:border-primary/50 cursor-pointer transition space-y-2 group shadow-xs"
+        class="p-4 rounded-xl border border-border bg-card hover:border-primary/50 cursor-pointer space-y-2 group shadow-xs"
       >
         <div class="flex items-center justify-between">
           <span class="text-xs font-medium text-muted-foreground">All Records</span>
-          <div class="p-1.5 rounded-lg bg-muted text-muted-foreground group-hover:text-primary transition">
+          <div class="p-1.5 rounded-lg bg-muted text-muted-foreground group-hover:text-primary">
             <Building2 class="w-4 h-4" />
           </div>
         </div>
@@ -133,7 +133,7 @@ const { copyToClipboard } = useClipboard()
 
       <!-- Infrastructure -->
       <div
-        class="p-4 rounded-xl border border-border bg-card hover:border-purple-500/50 cursor-pointer transition space-y-2 group shadow-xs"
+        class="p-4 rounded-xl border border-border bg-card hover:border-purple-500/50 cursor-pointer space-y-2 group shadow-xs"
       >
         <div class="flex items-center justify-between">
           <span class="text-xs font-medium text-muted-foreground">Infrastructure</span>
@@ -148,7 +148,7 @@ const { copyToClipboard } = useClipboard()
 
       <!-- Assets & Licenses -->
       <div
-        class="p-4 rounded-xl border border-border bg-card hover:border-amber-500/50 cursor-pointer transition space-y-2 group shadow-xs"
+        class="p-4 rounded-xl border border-border bg-card hover:border-amber-500/50 cursor-pointer space-y-2 group shadow-xs"
       >
         <div class="flex items-center justify-between">
           <span class="text-xs font-medium text-muted-foreground">Assets & Domains</span>
@@ -163,7 +163,7 @@ const { copyToClipboard } = useClipboard()
 
       <!-- Staff Identities -->
       <div
-        class="p-4 rounded-xl border border-border bg-card hover:border-blue-500/50 cursor-pointer transition space-y-2 group shadow-xs"
+        class="p-4 rounded-xl border border-border bg-card hover:border-blue-500/50 cursor-pointer space-y-2 group shadow-xs"
       >
         <div class="flex items-center justify-between">
           <span class="text-xs font-medium text-muted-foreground">Identities</span>
@@ -176,7 +176,7 @@ const { copyToClipboard } = useClipboard()
 
       <!-- Security Weak/Reused -->
       <div
-        class="p-4 rounded-xl border border-border bg-card hover:border-rose-500/50 cursor-pointer transition space-y-2 group shadow-xs"
+        class="p-4 rounded-xl border border-border bg-card hover:border-rose-500/50 cursor-pointer space-y-2 group shadow-xs"
       >
         <div class="flex items-center justify-between">
           <span class="text-xs font-medium text-muted-foreground">Weak / Reused</span>
@@ -191,7 +191,7 @@ const { copyToClipboard } = useClipboard()
 
       <!-- Vault Security Score -->
       <div
-        class="p-4 rounded-xl border border-border bg-card hover:border-emerald-500/50 cursor-pointer transition space-y-2 group shadow-xs"
+        class="p-4 rounded-xl border border-border bg-card hover:border-emerald-500/50 cursor-pointer space-y-2 group shadow-xs"
       >
         <div class="flex items-center justify-between">
           <span class="text-xs font-medium text-muted-foreground">Security Health</span>
@@ -226,7 +226,7 @@ const { copyToClipboard } = useClipboard()
             v-for="item in recentlyAdded"
             :key="item.id"
             @click="emit('select', item)"
-            class="py-3 flex items-center justify-between gap-3 hover:bg-muted/40 px-2 rounded-xl cursor-pointer transition"
+            class="py-3 flex items-center justify-between gap-3 hover:bg-muted/40 px-2 rounded-xl cursor-pointer"
           >
             <div class="flex items-center gap-3 min-w-0">
               <div class="p-2 rounded-xl shrink-0 bg-muted/60 text-foreground">
@@ -280,7 +280,7 @@ const { copyToClipboard } = useClipboard()
             v-for="item in recentlyModified"
             :key="item.id"
             @click="emit('select', item)"
-            class="py-3 flex items-center justify-between gap-3 hover:bg-muted/40 px-2 rounded-xl cursor-pointer transition"
+            class="py-3 flex items-center justify-between gap-3 hover:bg-muted/40 px-2 rounded-xl cursor-pointer"
           >
             <div class="flex items-center gap-3 min-w-0">
               <div class="p-2 rounded-xl shrink-0 bg-muted/60 text-foreground">
