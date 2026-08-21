@@ -23,10 +23,6 @@ const {
 } = useElectron()
 
 const isMac = computed(() => platform.value === 'darwin')
-
-const emit = defineEmits<{
-  (e: 'open-search'): void
-}>()
 </script>
 
 <template>

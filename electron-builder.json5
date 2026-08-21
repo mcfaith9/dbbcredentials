@@ -1,9 +1,9 @@
 // @see - https://www.electron.build/configuration/configuration
 {
   "$schema": "https://raw.githubusercontent.com/electron-userland/electron-builder/master/packages/app-builder-lib/scheme.json",
-  "appId": "com.dbb.credentials",
+  "appId": "com.dbb.app",
   "asar": true,
-  "productName": "DBB Credentials",
+  "productName": "DBBVault",
   "directories": {
     "output": "release/${version}"
   },
@@ -13,21 +13,19 @@
   ],
   "mac": {
     "target": [
-      "dmg",
-      "zip"
+      "dmg"
     ],
-    "category": "public.app-category.utilities",
-    "artifactName": "${productName}-Mac-${version}.${ext}"
+    "artifactName": "${productName}-Mac-${version}-Installer.${ext}"
   },
   "win": {
+    "icon": "public/icon1.ico",
     "target": [
       {
         "target": "nsis",
         "arch": [
           "x64"
         ]
-      },
-      "portable"
+      }
     ],
     "artifactName": "${productName}-Windows-${version}-Setup.${ext}"
   },
@@ -35,15 +33,28 @@
     "oneClick": false,
     "perMachine": false,
     "allowToChangeInstallationDirectory": true,
-    "deleteAppDataOnUninstall": false
+    "deleteAppDataOnUninstall": false,
+    "installerHeader": "public/installer-header.bmp",
+    "installerSidebar": "public/installer-sidebar.bmp",
+
+    "installerIcon": "public/icon1.ico",
+    "uninstallerIcon": "public/icon1.ico",
+
+    "createDesktopShortcut": true,
+    "createStartMenuShortcut": true,
+    "shortcutName": "DBBVault"
   },
   "linux": {
     "target": [
-      "AppImage",
-      "deb"
+      "AppImage"
     ],
-    "category": "Utility",
     "artifactName": "${productName}-Linux-${version}.${ext}"
-  }
+  },
+  "publish": [
+    {
+      "provider": "github",
+      "owner": "mcfaith9",
+      "repo": "dbbcredentials"
+    }
+  ],
 }
-

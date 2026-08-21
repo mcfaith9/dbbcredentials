@@ -72,7 +72,6 @@ const defaultFormData = () => ({
   notes: '',
   // Company Org fields
   company: '',
-  department: '',
   team: '',
   assigned_to: '',
   location: '',

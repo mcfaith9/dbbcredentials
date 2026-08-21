@@ -28,7 +28,6 @@ export interface VaultItem {
 
   // Company Organization
   company?: string
-  department?: string
   team?: string
   assigned_to?: string
   location?: string

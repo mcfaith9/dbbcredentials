@@ -34,9 +34,6 @@ const {
 } = useVault()
 
 const { copyToClipboard } = useClipboard()
-
-const quickTypes: { type: VaultItemType; label: string; desc: string }[] = [
-]
 </script>
 
 <template>

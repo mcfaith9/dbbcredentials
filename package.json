@@ -1,6 +1,8 @@
 {
-  "name": "dbbapp",
+  "name": "dbbvault",
   "private": true,
+  "description": "DBB Vault desktop application",
+  "author": "Marc Louie Cabigas",
   "version": "0.0.0",
   "type": "module",
   "scripts": {

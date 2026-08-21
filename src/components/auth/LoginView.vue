@@ -15,7 +15,7 @@ const router = useRouter()
 const { login, initAuth } = useAuth()
 const { success: toastSuccess } = useToast()
 
-const username = ref('dbbadmin')
+const username = ref('')
 const password = ref('')
 const showPassword = ref(false)
 const isLoading = ref(false)
@@ -49,12 +49,6 @@ async function handleLogin() {
   } finally {
     isLoading.value = false
   }
-}
-
-function fillDefaultCredentials() {
-  username.value = 'dbbadmin'
-  password.value = 'ilovedbb'
-  errorMessage.value = ''
 }
 </script>
 
@@ -99,7 +93,7 @@ function fillDefaultCredentials() {
                 type="text"
                 autocomplete="username"
                 required
-                placeholder="dbbadmin"
+                placeholder="dbb@admin"
                 class="w-full px-3.5 py-2.5 text-sm rounded-xl border border-zinc-800 bg-zinc-950/70 text-zinc-100 placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 transition"
               />
             </div>
@@ -150,15 +144,8 @@ function fillDefaultCredentials() {
             </div>
             <p class="text-[11px] text-zinc-400 leading-normal">
               This application is 100% offline. If using the default setup, credentials are
-              <span class="font-mono text-zinc-200">dbbadmin</span> / <span class="font-mono text-zinc-200">ilovedbb</span>.
+              <span class="font-mono text-zinc-200">dbbadmin</span> / <span class="font-mono text-zinc-200">***</span>.
             </p>
-            <button
-              type="button"
-              @click="fillDefaultCredentials"
-              class="text-[11px] text-indigo-400 font-semibold hover:underline"
-            >
-              Click to autofill default credentials
-            </button>
           </div>
 
           <!-- Submit Button -->
@@ -172,18 +159,6 @@ function fillDefaultCredentials() {
             <span v-else>Sign In</span>
           </button>
         </form>
-
-        <!-- Quick Demo Autofill helper button -->
-        <div class="pt-2 border-t border-zinc-800/80 flex items-center justify-between text-xs text-zinc-500">
-          <span>Default: <strong class="text-zinc-300 font-mono">dbbadmin</strong></span>
-          <button
-            type="button"
-            @click="fillDefaultCredentials"
-            class="text-indigo-400 hover:text-indigo-300 font-medium transition"
-          >
-            Autofill Default
-          </button>
-        </div>
       </div>
 
       <!-- Security Guarantee footer -->
