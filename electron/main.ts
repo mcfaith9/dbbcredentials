@@ -19,8 +19,8 @@ let win: BrowserWindow | null = null
 function createWindow() {
   win = new BrowserWindow({
     title: 'DBB Credentials Vault',
-    width: 1280,
-    height: 820,
+    width: 960,
+    height: 720,
     minWidth: 960,
     minHeight: 600,
     backgroundColor: '#09090b',

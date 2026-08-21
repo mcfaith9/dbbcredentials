@@ -1,6 +1,6 @@
 {
-  "name": "DBB Credentials",
-  "description": "DBB Credentials standalone local Electron desktop password manager with AES-256-GCM encrypted vault storage and PBKDF2 offline authentication.",
+  "name": "DBB Company Credential Vault",
+  "description": "DBB Company Credential Vault is a standalone local Electron desktop application for managing company and business credentials with AES-256-GCM encrypted vault storage and PBKDF2 offline authentication.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

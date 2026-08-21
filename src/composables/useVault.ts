@@ -1,5 +1,5 @@
 import { ref, computed } from 'vue'
-import type { VaultItem, Category, AppSettings, SecurityReport, VaultItemType } from '@/types'
+import type { VaultItem, Category, AppSettings, SecurityReport, VaultItemType, VaultNavFilter } from '@/types'
 import { LocalStorageService } from '@/services/storage'
 import { calculatePasswordStrength } from '@/services/crypto'
 
@@ -7,9 +7,14 @@ const items = ref<VaultItem[]>([])
 const categories = ref<Category[]>([])
 const settings = ref<AppSettings>(LocalStorageService.getSettings())
 const searchQuery = ref('')
-const selectedFilter = ref<'all' | 'favorites' | 'passwords' | 'notes' | 'identities' | 'trash' | 'security' | 'generator' | 'categories' | 'settings'>('all')
+const selectedFilter = ref<VaultNavFilter>('dashboard')
 const selectedCategory = ref<string | null>(null)
+const selectedTag = ref<string | null>(null)
+const selectedCompany = ref<string | null>(null)
+const selectedDepartment = ref<string | null>(null)
+const selectedType = ref<VaultItemType | null>(null)
 const selectedItemId = ref<string | null>(null)
+const sortBy = ref<'updated_desc' | 'updated_asc' | 'name_asc' | 'name_desc' | 'created_desc'>('updated_desc')
 const isLoaded = ref(false)
 
 export function useVault() {
@@ -19,7 +24,7 @@ export function useVault() {
     settings.value = LocalStorageService.getSettings()
     isLoaded.value = true
 
-    // Select first active item if none selected
+    // Select first active item if none selected and in list view
     if (!selectedItemId.value && activeItems.value.length > 0) {
       selectedItemId.value = activeItems.value[0].id
     }
@@ -31,7 +36,59 @@ export function useVault() {
   // Trash items
   const trashItems = computed(() => items.value.filter((i) => i.is_trash))
 
-  // Filtered items based on active view, search, and category
+  // Unique Companies
+  const uniqueCompanies = computed(() => {
+    const set = new Set<string>()
+    activeItems.value.forEach((i) => {
+      if (i.company?.trim()) set.add(i.company.trim())
+    })
+    return Array.from(set).sort()
+  })
+
+  // Unique Departments
+  const uniqueDepartments = computed(() => {
+    const set = new Set<string>()
+    activeItems.value.forEach((i) => {
+      if (i.department?.trim()) set.add(i.department.trim())
+    })
+    return Array.from(set).sort()
+  })
+
+  // Unique Teams
+  const uniqueTeams = computed(() => {
+    const set = new Set<string>()
+    activeItems.value.forEach((i) => {
+      if (i.team?.trim()) set.add(i.team.trim())
+    })
+    return Array.from(set).sort()
+  })
+
+  // Unique Assigned Persons
+  const uniqueAssignedTo = computed(() => {
+    const set = new Set<string>()
+    activeItems.value.forEach((i) => {
+      if (i.assigned_to?.trim()) set.add(i.assigned_to.trim())
+    })
+    return Array.from(set).sort()
+  })
+
+  // All Tags with counts
+  const allTagsWithCounts = computed(() => {
+    const map = new Map<string, number>()
+    activeItems.value.forEach((i) => {
+      i.tags?.forEach((t) => {
+        const clean = t.trim().toLowerCase()
+        if (clean) {
+          map.set(clean, (map.get(clean) || 0) + 1)
+        }
+      })
+    })
+    return Array.from(map.entries())
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name))
+  })
+
+  // Filtered items based on active view, search, category, tag, company, department, type
   const filteredItems = computed(() => {
     let list = items.value
 
@@ -41,15 +98,52 @@ export function useVault() {
     } else {
       list = list.filter((i) => !i.is_trash)
 
-      if (selectedFilter.value === 'favorites') {
-        list = list.filter((i) => i.favorite)
-      } else if (selectedFilter.value === 'passwords') {
-        list = list.filter((i) => i.type === 'password')
-      } else if (selectedFilter.value === 'notes') {
-        list = list.filter((i) => i.type === 'note')
-      } else if (selectedFilter.value === 'identities') {
-        list = list.filter((i) => i.type === 'identity')
+      switch (selectedFilter.value) {
+        case 'favorites':
+          list = list.filter((i) => i.favorite)
+          break
+        case 'passwords':
+          list = list.filter((i) => i.type === 'password')
+          break
+        case 'email_accounts':
+          list = list.filter((i) => i.type === 'email_account')
+          break
+        case 'social_accounts':
+          list = list.filter((i) => i.type === 'social_account')
+          break
+        case 'company_accounts':
+          list = list.filter((i) => i.type === 'company_account')
+          break
+        case 'pc_computers':
+          list = list.filter((i) => i.type === 'pc_computer')
+          break
+        case 'servers':
+          list = list.filter((i) => i.type === 'server')
+          break
+        case 'wifi':
+          list = list.filter((i) => i.type === 'wifi')
+          break
+        case 'domains':
+          list = list.filter((i) => i.type === 'domain')
+          break
+        case 'hosting':
+          list = list.filter((i) => i.type === 'hosting')
+          break
+        case 'software_licenses':
+          list = list.filter((i) => i.type === 'software_license')
+          break
+        case 'notes':
+          list = list.filter((i) => i.type === 'note')
+          break
+        case 'identities':
+          list = list.filter((i) => i.type === 'identity')
+          break
       }
+    }
+
+    // Direct Type filter dropdown
+    if (selectedType.value) {
+      list = list.filter((i) => i.type === selectedType.value)
     }
 
     // Category filter
@@ -57,35 +151,94 @@ export function useVault() {
       list = list.filter((i) => i.category.toLowerCase() === selectedCategory.value?.toLowerCase())
     }
 
-    // Search query
+    // Tag filter
+    if (selectedTag.value) {
+      const tagLower = selectedTag.value.toLowerCase()
+      list = list.filter((i) => i.tags?.some((t) => t.toLowerCase() === tagLower))
+    }
+
+    // Company filter
+    if (selectedCompany.value) {
+      list = list.filter((i) => i.company?.toLowerCase() === selectedCompany.value?.toLowerCase())
+    }
+
+    // Department filter
+    if (selectedDepartment.value) {
+      list = list.filter((i) => i.department?.toLowerCase() === selectedDepartment.value?.toLowerCase())
+    }
+
+    // Global Search across all fields
     const q = searchQuery.value.trim().toLowerCase()
     if (q) {
       list = list.filter((item) => {
-        const nameMatch = item.name.toLowerCase().includes(q)
-        const userMatch = item.username?.toLowerCase().includes(q)
-        const emailMatch = item.email?.toLowerCase().includes(q)
-        const webMatch = item.website_url?.toLowerCase().includes(q)
-        const catMatch = item.category.toLowerCase().includes(q)
-        const notesMatch = item.notes?.toLowerCase().includes(q)
-        const tagsMatch = item.tags?.some((t) => t.toLowerCase().includes(q))
-        const idMatch = item.full_name?.toLowerCase().includes(q) || item.company?.toLowerCase().includes(q)
-        const contentMatch = item.content?.toLowerCase().includes(q)
+        const textFields = [
+          item.name,
+          item.username,
+          item.email,
+          item.website_url,
+          item.account_id,
+          item.company,
+          item.department,
+          item.team,
+          item.assigned_to,
+          item.location,
+          item.provider,
+          item.login_url,
+          item.recovery_email,
+          item.imap_server,
+          item.smtp_server,
+          item.platform,
+          item.profile_url,
+          item.role,
+          item.access_level,
+          item.hostname,
+          item.operating_system,
+          item.ip_address,
+          item.mac_address,
+          item.device_type,
+          item.admin_account,
+          item.protocol,
+          item.server_url,
+          item.environment,
+          item.ssid,
+          item.router_ip,
+          item.domain_name,
+          item.registrar,
+          item.nameservers,
+          item.dashboard_url,
+          item.ftp_host,
+          item.ftp_username,
+          item.control_panel,
+          item.software_name,
+          item.vendor,
+          item.license_key,
+          item.license_type,
+          item.content,
+          item.full_name,
+          item.position,
+          item.work_email,
+          item.work_phone,
+          item.office_address,
+          item.category,
+          item.notes,
+        ]
 
-        return (
-          nameMatch ||
-          userMatch ||
-          emailMatch ||
-          webMatch ||
-          catMatch ||
-          notesMatch ||
-          tagsMatch ||
-          idMatch ||
-          contentMatch
-        )
+        const tagMatch = item.tags?.some((t) => t.toLowerCase().includes(q))
+        if (tagMatch) return true
+
+        return textFields.some((field) => field && field.toString().toLowerCase().includes(q))
       })
     }
 
-    return list
+    // Sorting
+    return [...list].sort((a, b) => {
+      if (sortBy.value === 'name_asc') return a.name.localeCompare(b.name)
+      if (sortBy.value === 'name_desc') return b.name.localeCompare(a.name)
+      if (sortBy.value === 'created_desc') return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      if (sortBy.value === 'updated_asc') return new Date(a.updated_at).getTime() - new Date(b.updated_at).getTime()
+      // updated_desc default
+      return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
+    })
   })
 
   // Selected item object
@@ -94,22 +247,73 @@ export function useVault() {
     return items.value.find((i) => i.id === selectedItemId.value) || null
   })
 
-  // Counts
+  // Counts for all sections & badges
   const counts = computed(() => {
     const active = activeItems.value
     return {
       all: active.length,
       favorites: active.filter((i) => i.favorite).length,
       passwords: active.filter((i) => i.type === 'password').length,
+      email_accounts: active.filter((i) => i.type === 'email_account').length,
+      social_accounts: active.filter((i) => i.type === 'social_account').length,
+      company_accounts: active.filter((i) => i.type === 'company_account').length,
+      pc_computers: active.filter((i) => i.type === 'pc_computer').length,
+      servers: active.filter((i) => i.type === 'server').length,
+      wifi: active.filter((i) => i.type === 'wifi').length,
+      domains: active.filter((i) => i.type === 'domain').length,
+      hosting: active.filter((i) => i.type === 'hosting').length,
+      software_licenses: active.filter((i) => i.type === 'software_license').length,
       notes: active.filter((i) => i.type === 'note').length,
       identities: active.filter((i) => i.type === 'identity').length,
+      categories: categories.value.length,
+      tags: allTagsWithCounts.value.length,
       trash: trashItems.value.length,
     }
   })
 
-  // Security Report & Analysis
+  // Expiration detection for domains and software licenses
+  const expirationAlerts = computed(() => {
+    const now = Date.now()
+    const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000
+
+    const expiringDomains: (VaultItem & { daysRemaining: number; isExpired: boolean })[] = []
+    const expiringLicenses: (VaultItem & { daysRemaining: number; isExpired: boolean })[] = []
+
+    activeItems.value.forEach((item) => {
+      if (item.type === 'domain' && item.expiration_date) {
+        const expTime = new Date(item.expiration_date).getTime()
+        if (!isNaN(expTime)) {
+          const diffMs = expTime - now
+          const daysRemaining = Math.ceil(diffMs / (1000 * 60 * 60 * 24))
+          if (diffMs <= THIRTY_DAYS_MS) {
+            expiringDomains.push({ ...item, daysRemaining, isExpired: diffMs <= 0 })
+          }
+        }
+      }
+
+      if (item.type === 'software_license' && item.expiration_date) {
+        const expTime = new Date(item.expiration_date).getTime()
+        if (!isNaN(expTime)) {
+          const diffMs = expTime - now
+          const daysRemaining = Math.ceil(diffMs / (1000 * 60 * 60 * 24))
+          if (diffMs <= THIRTY_DAYS_MS) {
+            expiringLicenses.push({ ...item, daysRemaining, isExpired: diffMs <= 0 })
+          }
+        }
+      }
+    })
+
+    return {
+      domains: expiringDomains.sort((a, b) => a.daysRemaining - b.daysRemaining),
+      licenses: expiringLicenses.sort((a, b) => a.daysRemaining - b.daysRemaining),
+      totalAlerts: expiringDomains.length + expiringLicenses.length,
+    }
+  })
+
+  // Security Report & Analysis across all credential items with passwords
   const securityReport = computed<SecurityReport>(() => {
-    const passwordItems = activeItems.value.filter((i) => i.type === 'password')
+    // Items that have password credentials
+    const passwordItems = activeItems.value.filter((i) => !!i.password)
     const totalPasswords = passwordItems.length
 
     const weakItems: VaultItem[] = []
@@ -178,6 +382,8 @@ export function useVault() {
       reusedItems,
       oldItems,
       missingItems,
+      expiringDomains: expirationAlerts.value.domains,
+      expiringLicenses: expirationAlerts.value.licenses,
     }
   })
 
@@ -243,15 +449,35 @@ export function useVault() {
     selectedItemId.value = id
   }
 
-  function setFilter(filter: typeof selectedFilter.value, category: string | null = null) {
+  function setFilter(
+    filter: VaultNavFilter,
+    category: string | null = null,
+    tag: string | null = null,
+    company: string | null = null,
+    department: string | null = null,
+    type: VaultItemType | null = null
+  ) {
     selectedFilter.value = filter
     selectedCategory.value = category
+    selectedTag.value = tag
+    selectedCompany.value = company
+    selectedDepartment.value = department
+    selectedType.value = type
     // Auto-select first item if possible
     setTimeout(() => {
       if (filteredItems.value.length > 0) {
         selectedItemId.value = filteredItems.value[0].id
       }
     }, 50)
+  }
+
+  function clearAllFilters() {
+    selectedCategory.value = null
+    selectedTag.value = null
+    selectedCompany.value = null
+    selectedDepartment.value = null
+    selectedType.value = null
+    searchQuery.value = ''
   }
 
   // Category Actions
@@ -300,8 +526,16 @@ export function useVault() {
     return LocalStorageService.exportVaultData()
   }
 
-  function importVault(data: any) {
-    const result = LocalStorageService.importVaultData(data)
+  async function exportEncryptedBackup(passphrase: string) {
+    return LocalStorageService.exportEncryptedBackup(passphrase)
+  }
+
+  async function decryptBackupPayload(content: string, passphrase?: string) {
+    return LocalStorageService.decryptBackupPayload(content, passphrase)
+  }
+
+  function importVault(data: any, strategy?: any) {
+    const result = LocalStorageService.importVaultData(data, strategy)
     loadVault()
     return result
   }
@@ -321,9 +555,23 @@ export function useVault() {
     searchQuery,
     selectedFilter,
     selectedCategory,
+    selectedTag,
+    selectedCompany,
+    selectedDepartment,
+    selectedType,
     selectedItemId,
     selectedItem,
+    sortBy,
+    uniqueCompanies,
+    uniqueDepartments,
+    uniqueTeams,
+    uniqueAssignedTo,
+    allTagsWithCounts,
+    companies: uniqueCompanies,
+    departments: uniqueDepartments,
+    tags: allTagsWithCounts,
     counts,
+    expirationAlerts,
     securityReport,
     recentlyAdded,
     recentlyModified,
@@ -337,12 +585,16 @@ export function useVault() {
     toggleFavorite,
     selectItem,
     setFilter,
+    clearAllFilters,
     addCategory,
     deleteCategory,
     updateSettings,
     applyTheme,
     exportVault,
+    exportEncryptedBackup,
+    decryptBackupPayload,
     importVault,
     resetVault,
   }
 }
+

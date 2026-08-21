@@ -8,7 +8,6 @@ import {
   Eye,
   EyeOff,
   ShieldCheck,
-  KeyRound,
   Info,
 } from '@lucide/vue'
 
@@ -16,7 +15,7 @@ const router = useRouter()
 const { login, initAuth } = useAuth()
 const { success: toastSuccess } = useToast()
 
-const username = ref('dbadmin')
+const username = ref('dbbadmin')
 const password = ref('')
 const showPassword = ref(false)
 const isLoading = ref(false)
@@ -53,7 +52,7 @@ async function handleLogin() {
 }
 
 function fillDefaultCredentials() {
-  username.value = 'dbadmin'
+  username.value = 'dbbadmin'
   password.value = 'ilovedbb'
   errorMessage.value = ''
 }
@@ -67,15 +66,15 @@ function fillDefaultCredentials() {
 
     <div class="relative z-10 w-full max-w-md space-y-6 animate-in fade-in zoom-in-95 duration-200">
       <!-- App Brand Logo & Title -->
-      <div class="text-center space-y-2">
-        <div class="inline-flex p-3.5 rounded-2xl bg-zinc-900 border border-zinc-800 shadow-xl text-primary mb-2">
-          <KeyRound class="w-8 h-8 text-indigo-400" />
+      <div class="text-center">
+        <div class="inline-flex p-3.5 text-primary mb-1">
+          <img src="@/assets/img/dbblogo.png" class="w-20 rounded-full" />
         </div>
         <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight text-zinc-100">
-          DBB Password Manager
+          DBB Company Vault
         </h1>
         <p class="text-xs sm:text-sm text-zinc-400">
-          Sign in to your local password vault
+          Sign in to enterprise credential vault
         </p>
       </div>
 
@@ -100,8 +99,8 @@ function fillDefaultCredentials() {
                 type="text"
                 autocomplete="username"
                 required
-                placeholder="dbadmin"
-                class="w-full px-3.5 py-2.5 text-sm rounded-xl border border-zinc-800 bg-zinc-950/70 text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 transition"
+                placeholder="dbbadmin"
+                class="w-full px-3.5 py-2.5 text-sm rounded-xl border border-zinc-800 bg-zinc-950/70 text-zinc-100 placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 transition"
               />
             </div>
           </div>
@@ -126,7 +125,7 @@ function fillDefaultCredentials() {
                 autocomplete="current-password"
                 required
                 placeholder="•••••••••"
-                class="w-full pl-3.5 pr-11 py-2.5 text-sm font-mono rounded-xl border border-zinc-800 bg-zinc-950/70 text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 transition"
+                class="w-full pl-3.5 pr-11 py-2.5 text-sm font-mono rounded-xl border border-zinc-800 bg-zinc-950/70 text-zinc-100 placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 transition"
               />
               <button
                 type="button"
@@ -151,7 +150,7 @@ function fillDefaultCredentials() {
             </div>
             <p class="text-[11px] text-zinc-400 leading-normal">
               This application is 100% offline. If using the default setup, credentials are
-              <span class="font-mono text-zinc-200">dbadmin</span> / <span class="font-mono text-zinc-200">ilovedbb</span>.
+              <span class="font-mono text-zinc-200">dbbadmin</span> / <span class="font-mono text-zinc-200">ilovedbb</span>.
             </p>
             <button
               type="button"
@@ -176,7 +175,7 @@ function fillDefaultCredentials() {
 
         <!-- Quick Demo Autofill helper button -->
         <div class="pt-2 border-t border-zinc-800/80 flex items-center justify-between text-xs text-zinc-500">
-          <span>Default: <strong class="text-zinc-300 font-mono">dbadmin</strong></span>
+          <span>Default: <strong class="text-zinc-300 font-mono">dbbadmin</strong></span>
           <button
             type="button"
             @click="fillDefaultCredentials"

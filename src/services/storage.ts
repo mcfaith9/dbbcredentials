@@ -1,5 +1,5 @@
-import type { VaultItem, User, AppSettings, Category } from '@/types'
-import { hashPassword } from './crypto'
+import type { VaultItem, User, AppSettings, Category, EncryptedBackupPayload, ImportConflictStrategy } from '@/types'
+import { hashPassword, encryptVault, decryptVault } from './crypto'
 
 const STORAGE_KEYS = {
   USER: 'dbb_local_user',
@@ -9,14 +9,13 @@ const STORAGE_KEYS = {
 }
 
 const DEFAULT_CATEGORIES: Category[] = [
-  { id: 'personal', name: 'Personal', icon: 'User', is_custom: false },
-  { id: 'work', name: 'Work', icon: 'Briefcase', is_custom: false },
-  { id: 'finance', name: 'Finance', icon: 'DollarSign', is_custom: false },
-  { id: 'social', name: 'Social', icon: 'Share2', is_custom: false },
-  { id: 'shopping', name: 'Shopping', icon: 'ShoppingBag', is_custom: false },
-  { id: 'development', name: 'Development', icon: 'Code', is_custom: false },
-  { id: 'email', name: 'Email', icon: 'Mail', is_custom: false },
-  { id: 'other', name: 'Other', icon: 'Folder', is_custom: false },
+  { id: 'it_infra', name: 'IT & Infrastructure', icon: 'Server', is_custom: false },
+  { id: 'operations', name: 'Operations', icon: 'Briefcase', is_custom: false },
+  { id: 'marketing_social', name: 'Marketing & Social', icon: 'Share2', is_custom: false },
+  { id: 'dev_eng', name: 'Development & Engineering', icon: 'Code', is_custom: false },
+  { id: 'security_access', name: 'Security & Access', icon: 'Shield', is_custom: false },
+  { id: 'executive_admin', name: 'Executive & Admin', icon: 'Building', is_custom: false },
+  { id: 'general', name: 'General', icon: 'Folder', is_custom: false },
 ]
 
 const DEFAULT_SETTINGS: AppSettings = {
@@ -27,132 +26,80 @@ const DEFAULT_SETTINGS: AppSettings = {
   requirePasswordForReveal: false,
 }
 
-// Initial sample seed items for first-time launch
+// Initial sample seed items for first-time launch - Company-only records
 const INITIAL_VAULT_ITEMS: VaultItem[] = [
-  {
-    id: 'item-github',
-    type: 'password',
-    name: 'GitHub Enterprise',
-    category: 'Development',
-    favorite: true,
-    tags: ['work', 'git', 'mfa'],
-    notes: '2FA token backup stored in offline hardware key.',
-    is_trash: false,
-    deleted_at: null,
-    created_at: new Date(Date.now() - 35 * 86400000).toISOString(),
-    updated_at: new Date(Date.now() - 5 * 86400000).toISOString(),
-    username: 'dbadmin@github.internal',
-    email: 'dbadmin@github.internal',
-    password: 'Kx9#mP$2vL!9qZ@8wR',
-    website_url: 'https://github.com',
-  },
-  {
-    id: 'item-aws',
-    type: 'password',
-    name: 'AWS Cloud Console',
-    category: 'Work',
-    favorite: true,
-    tags: ['cloud', 'infrastructure', 'root'],
-    notes: 'Root account access with YubiKey hardware token.',
-    is_trash: false,
-    deleted_at: null,
-    created_at: new Date(Date.now() - 120 * 86400000).toISOString(),
-    updated_at: new Date(Date.now() - 110 * 86400000).toISOString(),
-    username: 'ops-root@dbb.corp',
-    email: 'ops-root@dbb.corp',
-    password: 'P@ssw0rd123!', // weak & old password for security audit demonstration
-    website_url: 'https://aws.amazon.com/console',
-  },
-  {
-    id: 'item-google',
-    type: 'password',
-    name: 'Primary Work Google Workspace',
-    category: 'Email',
-    favorite: false,
-    tags: ['email', 'gsuite'],
-    notes: 'Corporate email and document drive.',
-    is_trash: false,
-    deleted_at: null,
-    created_at: new Date(Date.now() - 40 * 86400000).toISOString(),
-    updated_at: new Date(Date.now() - 12 * 86400000).toISOString(),
-    username: 'admin@dbb-industries.local',
-    email: 'admin@dbb-industries.local',
-    password: 'Kx9#mP$2vL!9qZ@8wR', // Reused password for audit demonstration
-    website_url: 'https://mail.google.com',
-  },
-  {
-    id: 'item-ssh-note',
-    type: 'note',
-    name: 'Production Bastion SSH Keys & Config',
-    category: 'Development',
-    favorite: true,
-    tags: ['ssh', 'server', 'secret'],
-    notes: 'Do not commit to public repositories.',
-    is_trash: false,
-    deleted_at: null,
-    created_at: new Date(Date.now() - 20 * 86400000).toISOString(),
-    updated_at: new Date(Date.now() - 2 * 86400000).toISOString(),
-    content: `Host bastion.prod.dbb
-  HostName 192.168.10.45
-  User deployer
-  Port 2222
-  IdentityFile ~/.ssh/id_ed25519_bastion
-  StrictHostKeyChecking yes`,
-  },
-  {
-    id: 'item-identity-admin',
-    type: 'identity',
-    name: 'DBB System Administrator Profile',
-    category: 'Personal',
-    favorite: false,
-    tags: ['identity', 'admin'],
-    notes: 'Official primary contact records.',
-    is_trash: false,
-    deleted_at: null,
-    created_at: new Date(Date.now() - 10 * 86400000).toISOString(),
-    updated_at: new Date(Date.now() - 10 * 86400000).toISOString(),
-    full_name: 'DBB System Administrator',
-    email: 'dbadmin@dbb-industries.local',
-    phone: '+1 (555) 492-0199',
-    address: '100 Innovation Way, Suite 400, Tech Park, CA 94025',
-    birthday: '1990-05-15',
-    company: 'DBB Industries Ltd.',
-  },
 ]
 
 export class LocalStorageService {
   // Initialize user & database if not present
   static async initializeDatabase(): Promise<User> {
     const rawUser = localStorage.getItem(STORAGE_KEYS.USER)
+    let userObj: User | null = null
+
     if (rawUser) {
       try {
-        return JSON.parse(rawUser)
+        userObj = JSON.parse(rawUser)
       } catch (e) {
         console.error('Failed to parse user from local database, re-initializing.', e)
       }
     }
 
-    // Default credentials: username = "dbadmin", password = "ilovedbb"
-    const { hash, salt } = await hashPassword('ilovedbb')
-    const defaultUser: User = {
-      id: 'usr_default_admin',
-      username: 'dbadmin',
-      password_hash: hash,
-      salt: salt,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
+    if (!userObj) {
+      // Default credentials: username = "dbbadmin", password = "ilovedbb"
+      const { hash, salt } = await hashPassword('ilovedbb')
+      userObj = {
+        id: 'usr_default_admin',
+        username: 'dbbadmin',
+        password_hash: hash,
+        salt: salt,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      }
+      localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(userObj))
     }
 
-    localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(defaultUser))
-
-    // Initialize items if missing
-    if (!localStorage.getItem(STORAGE_KEYS.ITEMS)) {
+    // Initialize or migrate items
+    const rawItems = localStorage.getItem(STORAGE_KEYS.ITEMS)
+    if (!rawItems) {
       localStorage.setItem(STORAGE_KEYS.ITEMS, JSON.stringify(INITIAL_VAULT_ITEMS))
+    } else {
+      // Migrate existing items to remove 'Personal' references
+      try {
+        const parsed: VaultItem[] = JSON.parse(rawItems)
+        let changed = false
+        const migrated = parsed.map((item) => {
+          if (item.category === 'Personal') {
+            changed = true
+            return { ...item, category: 'General', company: item.company || 'DBB' }
+          }
+          if (!item.company) {
+            changed = true
+            return { ...item, company: 'DBB' }
+          }
+          return item
+        })
+        if (changed) {
+          localStorage.setItem(STORAGE_KEYS.ITEMS, JSON.stringify(migrated))
+        }
+      } catch {
+        localStorage.setItem(STORAGE_KEYS.ITEMS, JSON.stringify(INITIAL_VAULT_ITEMS))
+      }
     }
 
-    // Initialize categories if missing
-    if (!localStorage.getItem(STORAGE_KEYS.CATEGORIES)) {
+    // Initialize or migrate categories
+    const rawCats = localStorage.getItem(STORAGE_KEYS.CATEGORIES)
+    if (!rawCats) {
       localStorage.setItem(STORAGE_KEYS.CATEGORIES, JSON.stringify(DEFAULT_CATEGORIES))
+    } else {
+      try {
+        const parsedCats: Category[] = JSON.parse(rawCats)
+        const filtered = parsedCats.filter((c) => c.name.toLowerCase() !== 'personal')
+        if (filtered.length !== parsedCats.length) {
+          localStorage.setItem(STORAGE_KEYS.CATEGORIES, JSON.stringify(filtered))
+        }
+      } catch {
+        localStorage.setItem(STORAGE_KEYS.CATEGORIES, JSON.stringify(DEFAULT_CATEGORIES))
+      }
     }
 
     // Initialize settings if missing
@@ -160,7 +107,7 @@ export class LocalStorageService {
       localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(DEFAULT_SETTINGS))
     }
 
-    return defaultUser
+    return userObj
   }
 
   // Get current user
@@ -213,6 +160,7 @@ export class LocalStorageService {
         const updated: VaultItem = {
           ...items[index],
           ...item,
+          company: item.company || items[index].company || 'DBB',
           updated_at: now,
         }
         items[index] = updated
@@ -225,7 +173,7 @@ export class LocalStorageService {
       id: item.id || `item_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       type: item.type,
       name: item.name,
-      category: item.category || 'Personal',
+      category: item.category || 'General',
       favorite: !!item.favorite,
       tags: item.tags || [],
       notes: item.notes || '',
@@ -233,16 +181,101 @@ export class LocalStorageService {
       deleted_at: null,
       created_at: now,
       updated_at: now,
+
+      // Company Organization
+      company: item.company || 'DBB',
+      department: item.department || '',
+      team: item.team || '',
+      assigned_to: item.assigned_to || '',
+      location: item.location || '',
+
+      // General / Login
       username: item.username || '',
       email: item.email || '',
       password: item.password || '',
       website_url: item.website_url || '',
+      account_id: item.account_id || '',
+
+      // Email Account
+      provider: item.provider || '',
+      login_url: item.login_url || '',
+      recovery_email: item.recovery_email || '',
+      recovery_phone: item.recovery_phone || '',
+      imap_server: item.imap_server || '',
+      imap_port: item.imap_port || '',
+      smtp_server: item.smtp_server || '',
+      smtp_port: item.smtp_port || '',
+      security_encryption: item.security_encryption || '',
+      app_password: item.app_password || '',
+      two_factor_method: item.two_factor_method || '',
+
+      // Social Account
+      platform: item.platform || '',
+      profile_url: item.profile_url || '',
+
+      // Company Account
+      role: item.role || '',
+      access_level: item.access_level || '',
+
+      // PC / Computer
+      hostname: item.hostname || '',
+      pin: item.pin || '',
+      operating_system: item.operating_system || '',
+      ip_address: item.ip_address || '',
+      mac_address: item.mac_address || '',
+      device_type: item.device_type || '',
+      admin_account: item.admin_account || '',
+      rdp_enabled: item.rdp_enabled ?? false,
+      rdp_port: item.rdp_port || '',
+      remote_access_url: item.remote_access_url || '',
+
+      // Server
+      port: item.port || '',
+      protocol: item.protocol || '',
+      server_url: item.server_url || '',
+      environment: item.environment || 'Production',
+
+      // Wi-Fi
+      ssid: item.ssid || '',
+      security_type: item.security_type || '',
+      router_ip: item.router_ip || '',
+      router_username: item.router_username || '',
+      router_password: item.router_password || '',
+
+      // Domain
+      domain_name: item.domain_name || '',
+      registrar: item.registrar || '',
+      nameservers: item.nameservers || '',
+      registration_date: item.registration_date || '',
+      expiration_date: item.expiration_date || '',
+      auto_renewal: item.auto_renewal ?? true,
+
+      // Hosting
+      dashboard_url: item.dashboard_url || '',
+      server_ip: item.server_ip || '',
+      ftp_host: item.ftp_host || '',
+      ftp_username: item.ftp_username || '',
+      ftp_password: item.ftp_password || '',
+      control_panel: item.control_panel || '',
+
+      // Software License
+      software_name: item.software_name || '',
+      vendor: item.vendor || '',
+      license_key: item.license_key || '',
+      license_type: item.license_type || '',
+      purchase_date: item.purchase_date || '',
+      seats_count: item.seats_count || '',
+      download_url: item.download_url || '',
+
+      // Note
       content: item.content || '',
+
+      // Identity
       full_name: item.full_name || '',
-      phone: item.phone || '',
-      address: item.address || '',
-      birthday: item.birthday || '',
-      company: item.company || '',
+      position: item.position || '',
+      work_email: item.work_email || '',
+      work_phone: item.work_phone || '',
+      office_address: item.office_address || '',
     }
 
     items.unshift(newItem)
@@ -311,7 +344,8 @@ export class LocalStorageService {
     const raw = localStorage.getItem(STORAGE_KEYS.CATEGORIES)
     if (!raw) return DEFAULT_CATEGORIES
     try {
-      return JSON.parse(raw)
+      const cats: Category[] = JSON.parse(raw)
+      return cats.filter((c) => c.name.toLowerCase() !== 'personal')
     } catch {
       return DEFAULT_CATEGORIES
     }
@@ -361,6 +395,7 @@ export class LocalStorageService {
 
   // Export full vault as JSON object
   static exportVaultData(): {
+    format: string
     version: number
     exportedAt: string
     items: VaultItem[]
@@ -368,6 +403,7 @@ export class LocalStorageService {
     settings: AppSettings
   } {
     return {
+      format: 'dbb-company-credential-vault',
       version: 1,
       exportedAt: new Date().toISOString(),
       items: this.getItems(),
@@ -376,29 +412,103 @@ export class LocalStorageService {
     }
   }
 
-  // Import vault data
-  static importVaultData(data: {
-    items?: VaultItem[]
+  // Create Encrypted Backup Payload
+  static async exportEncryptedBackup(passphrase: string): Promise<EncryptedBackupPayload> {
+    const rawData = this.exportVaultData()
+    const jsonStr = JSON.stringify(rawData)
+    const encryptedPayload = await encryptVault(jsonStr, passphrase)
+
+    return {
+      format: 'dbb-company-credential-vault',
+      version: 1,
+      createdAt: new Date().toISOString(),
+      encrypted: true,
+      payload: encryptedPayload,
+    }
+  }
+
+  // Decrypt and Parse Backup Payload
+  static async decryptBackupPayload(backupContent: string, passphrase?: string): Promise<{
+    format: string
+    version: number
+    createdAt?: string
+    exportedAt?: string
+    items: VaultItem[]
     categories?: Category[]
     settings?: AppSettings
-  }): { importedCount: number } {
+  }> {
+    let parsed: any
+    try {
+      parsed = JSON.parse(backupContent)
+    } catch {
+      throw new Error('Invalid JSON file format.')
+    }
+
+    if (parsed.encrypted || (parsed.version && parsed.salt && parsed.iv && parsed.data)) {
+      if (!passphrase) {
+        throw new Error('Password required to decrypt this backup file.')
+      }
+
+      const rawCipher = parsed.payload || backupContent
+      const decryptedStr = await decryptVault(typeof rawCipher === 'string' ? rawCipher : JSON.stringify(rawCipher), passphrase)
+      try {
+        return JSON.parse(decryptedStr)
+      } catch {
+        throw new Error('Decrypted content is not valid JSON.')
+      }
+    }
+
+    return parsed
+  }
+
+  // Import vault data with conflict resolution strategy
+  static importVaultData(
+    data: {
+      items?: VaultItem[]
+      categories?: Category[]
+      settings?: AppSettings
+    },
+    strategy: ImportConflictStrategy = 'update'
+  ): { importedCount: number; updatedCount: number; skippedCount: number } {
     if (!data || !Array.isArray(data.items)) {
-      throw new Error('Invalid vault export format')
+      throw new Error('Invalid vault export format: Missing items array.')
     }
 
     const currentItems = this.getItems()
     const itemMap = new Map<string, VaultItem>()
-
-    // Retain existing items
     currentItems.forEach((i) => itemMap.set(i.id, i))
 
-    // Merge or append imported items
-    let count = 0
+    let importedCount = 0
+    let updatedCount = 0
+    let skippedCount = 0
+
     data.items.forEach((item) => {
-      if (item && item.id && item.name && item.type) {
-        itemMap.set(item.id, item)
-        count++
+      if (!item || !item.name || !item.type) return
+
+      const existing = itemMap.get(item.id)
+
+      if (existing) {
+        if (strategy === 'skip') {
+          skippedCount++
+          return
+        } else if (strategy === 'new') {
+          // generate new ID
+          const newId = `item_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+          const copy: VaultItem = { ...item, id: newId, name: `${item.name} (Imported)` }
+          itemMap.set(newId, copy)
+          importedCount++
+          return
+        } else {
+          // 'update' or default
+          itemMap.set(item.id, { ...existing, ...item, updated_at: new Date().toISOString() })
+          updatedCount++
+          return
+        }
       }
+
+      // New item not present currently
+      itemMap.set(item.id, item)
+      importedCount++
     })
 
     this.saveItems(Array.from(itemMap.values()))
@@ -408,14 +518,14 @@ export class LocalStorageService {
       const catMap = new Map<string, Category>()
       currentCats.forEach((c) => catMap.set(c.name.toLowerCase(), c))
       data.categories.forEach((c) => {
-        if (!catMap.has(c.name.toLowerCase())) {
+        if (c.name && c.name.toLowerCase() !== 'personal' && !catMap.has(c.name.toLowerCase())) {
           catMap.set(c.name.toLowerCase(), c)
         }
       })
       localStorage.setItem(STORAGE_KEYS.CATEGORIES, JSON.stringify(Array.from(catMap.values())))
     }
 
-    return { importedCount: count }
+    return { importedCount, updatedCount, skippedCount }
   }
 
   // Reset vault to defaults
@@ -425,3 +535,4 @@ export class LocalStorageService {
     localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(DEFAULT_SETTINGS))
   }
 }
+

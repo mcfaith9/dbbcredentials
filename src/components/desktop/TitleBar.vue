@@ -10,9 +10,6 @@ import {
   Square,
   Copy,
   X,
-  Laptop,
-  Monitor,
-  Search,
 } from '@lucide/vue'
 
 const { isAuthenticated, lock } = useAuth()
@@ -73,28 +70,15 @@ const emit = defineEmits<{
         <div class="w-5 h-5 rounded-md bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
           <ShieldCheck class="w-3.5 h-3.5" />
         </div>
-        <span class="font-semibold tracking-tight text-zinc-200">DBB Credentials</span>
+        <span class="font-semibold tracking-tight text-zinc-200">DBB Company Vault</span>
         <span class="text-[10px] px-1.5 py-0.5 rounded bg-zinc-800/80 text-zinc-400 border border-zinc-700/50 font-mono">
-          Desktop v1.0
+          Enterprise v1.0
         </span>
       </div>
     </div>
 
     <!-- Center Section: Search & Vault Status -->
     <div class="flex items-center gap-3">
-      <!-- Search Shortcut Trigger (if authenticated) -->
-      <button
-        v-if="isAuthenticated"
-        id="titlebar-quick-search"
-        @click="emit('open-search')"
-        class="hidden sm:flex items-center gap-2 px-2.5 py-1 rounded-md bg-zinc-900 hover:bg-zinc-850 border border-zinc-800 text-zinc-400 hover:text-zinc-200 transition text-[11px]"
-        style="-webkit-app-region: no-drag;"
-      >
-        <Search class="w-3 h-3 text-zinc-400" />
-        <span>Search Vault</span>
-        <kbd class="px-1.5 py-0.2 rounded bg-zinc-800 border border-zinc-700 text-[10px] text-zinc-400 font-mono">Ctrl+K</kbd>
-      </button>
-
       <!-- Vault Lock Status Badge -->
       <div
         class="flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] border"
@@ -114,9 +98,6 @@ const emit = defineEmits<{
         :class="isElectron ? 'bg-indigo-950/40 text-indigo-300 border-indigo-800/40' : 'bg-zinc-900 text-zinc-400 border-zinc-800'"
         :title="isElectron ? 'Running inside native Electron desktop environment' : 'Running in browser preview mode (Electron ready)'"
       >
-        <Laptop v-if="isElectron" class="w-3 h-3 text-indigo-400" />
-        <Monitor v-else class="w-3 h-3 text-zinc-400" />
-        <span>{{ isElectron ? 'Electron Native' : 'Desktop Preview' }}</span>
       </div>
 
       <!-- Quick Lock Button -->
