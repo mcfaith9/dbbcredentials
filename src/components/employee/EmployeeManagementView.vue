@@ -39,7 +39,6 @@ import {
   X,
   UserRoundCheck,
   Printer,
-  Award,
   Clock,
   Calendar,
 } from '@lucide/vue'
@@ -271,31 +270,31 @@ function handlePrintDossier(emp: VaultItem) {
   <div class="h-full flex flex-col bg-background overflow-hidden min-w-0" style="width: -webkit-fill-available;">
     <!-- Top Action & Metrics Header -->
     <div class="p-4 sm:p-5 border-b border-border bg-card/60 space-y-4 shrink-0">
-      <!-- Title & Action Buttons -->
-      <div class="flex items-center justify-between gap-3 flex-wrap">
-        <div class="flex items-center gap-3">
+      <!-- Title & Action Buttons Row -->
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div class="flex items-center gap-3 min-w-0">
           <div class="p-2.5 rounded-2xl bg-primary/10 text-primary shrink-0">
             <UsersRound class="w-6 h-6" />
           </div>
-          <div>
-            <div class="flex items-center gap-2">
+          <div class="min-w-0">
+            <div class="flex items-center gap-2 flex-wrap">
               <h2 class="text-lg font-bold text-foreground">Employee Management</h2>
               <span class="px-2 py-0.5 rounded-full text-xs font-bold bg-primary/10 text-primary border border-primary/20">
                 {{ stats.total }} Total
               </span>
             </div>
-            <p class="text-xs text-muted-foreground">
-              Master employee directory, Philippine government IDs, and automated Excel/CSV import & deduplication
+            <p class="text-xs text-muted-foreground truncate">
+              Manage your workforce, records, and employee information—all in one place.
             </p>
           </div>
         </div>
 
-        <!-- Main Actions -->
-        <div class="flex items-center gap-2 flex-wrap">
-          <!-- Print Roster -->
+        <!-- Action Buttons Grouped on the Right: [Print] [Export] [Import] [Add Employee] -->
+        <div class="flex items-center gap-2 flex-wrap shrink-0 sm:self-center">
+          <!-- Print -->
           <button
             @click="handlePrintTable"
-            class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl border border-border bg-background hover:bg-muted text-foreground"
+            class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl border border-border bg-background hover:bg-muted text-foreground transition-colors"
             title="Print Employee Directory / Table Roster"
           >
             <Printer class="w-3.5 h-3.5 text-blue-600" />
@@ -305,7 +304,8 @@ function handlePrintDossier(emp: VaultItem) {
           <!-- Export -->
           <button
             @click="showExportModal = true"
-            class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl border border-border bg-background hover:bg-muted text-foreground"
+            class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl border border-border bg-background hover:bg-muted text-foreground transition-colors"
+            title="Export Employee Data"
           >
             <Download class="w-3.5 h-3.5 text-emerald-600" />
             <span>Export</span>
@@ -314,16 +314,18 @@ function handlePrintDossier(emp: VaultItem) {
           <!-- Import -->
           <button
             @click="showImportModal = true"
-            class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl border border-primary/30 bg-primary/10 hover:bg-primary/20 text-primary"
+            class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl border border-primary/30 bg-primary/10 hover:bg-primary/20 text-primary transition-colors"
+            title="Import Excel / CSV"
           >
             <Upload class="w-3.5 h-3.5" />
-            <span>Import Excel / CSV</span>
+            <span>Import</span>
           </button>
 
-          <!-- + Add Employee -->
+          <!-- Add Employee -->
           <button
             @click="emit('add-employee')"
-            class="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm"
+            class="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm transition-colors"
+            title="Add New Employee Record"
           >
             <Plus class="w-4 h-4" />
             <span>Add Employee</span>
@@ -660,7 +662,7 @@ function handlePrintDossier(emp: VaultItem) {
 
               <!-- Start Date & Calculated Tenure -->
               <td class="py-2.5 px-3">
-                <div v-if="emp.start_date" class="text-foreground font-medium flex items-center gap-1">
+                <div class="text-foreground font-medium flex items-center gap-1">
                   <Calendar class="w-3 h-3 text-muted-foreground" />
                   <span>{{ formatDate(emp.start_date) }}</span>
                 </div>

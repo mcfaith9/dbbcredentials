@@ -3,66 +3,35 @@
  * Displays dates cleanly as e.g. "August 21, 2026" or "August 21, 2026, 3:45 PM"
  */
 
-export function formatDate(dateInput: string | Date | null | undefined): string {
-  if (!dateInput) return ''
-  const date = typeof dateInput === 'string' ? new Date(dateInput) : dateInput
-  if (isNaN(date.getTime())) {
-    // If it's already a simple text or custom format, return as is
-    return String(dateInput)
-  }
-
-  // Format with full English month name (Philippines standard business format)
-  return new Intl.DateTimeFormat('en-PH', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  }).format(date)
+const MONTH_MAP: Record<string, number> = {
+  jan: 0, january: 0,
+  feb: 1, february: 1,
+  mar: 2, march: 2,
+  apr: 3, april: 3,
+  may: 4,
+  jun: 5, june: 5,
+  jul: 6, july: 6,
+  aug: 7, august: 7,
+  sep: 8, sept: 8, september: 8,
+  oct: 9, october: 9,
+  nov: 10, november: 10,
+  dec: 11, december: 11,
 }
 
-export function formatDateTime(dateInput: string | Date | null | undefined): string {
-  if (!dateInput) return ''
-  const date = typeof dateInput === 'string' ? new Date(dateInput) : dateInput
-  if (isNaN(date.getTime())) return String(dateInput)
-
-  return new Intl.DateTimeFormat('en-PH', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-    hour12: true,
-  }).format(date)
-}
-
-export function formatShortDate(dateInput: string | Date | null | undefined): string {
-  if (!dateInput) return ''
-  const date = typeof dateInput === 'string' ? new Date(dateInput) : dateInput
-  if (isNaN(date.getTime())) return String(dateInput)
-
-  return new Intl.DateTimeFormat('en-PH', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  }).format(date)
-}
-
-export function toDateInputValue(dateInput: string | Date | null | undefined): string {
-  if (!dateInput) return ''
-  const date = typeof dateInput === 'string' ? new Date(dateInput) : dateInput
-  if (isNaN(date.getTime())) return ''
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-  return `${year}-${month}-${day}`
+function normalizeYear(rawYear: number): number {
+  if (rawYear >= 1000) return rawYear
+  // 2-digit year interpretation: e.g. 25 -> 2025, 95 -> 1995
+  return rawYear >= 50 ? 1900 + rawYear : 2000 + rawYear
 }
 
 /**
- * Parses flexible date representations:
+ * Parses flexible date representations safely without altering original data:
  * - Date instances
- * - Standard ISO strings "YYYY-MM-DD"
- * - Human English strings: "January 15, 2021", "Jan 15, 2021", "15 January 2021"
- * - Numeric delimiters: "01/15/2021", "2021/01/15", "15-01-2021"
- * - Excel serial numbers
+ * - Human English strings: "February 16,2026", "February 16, 2026", "January 15, 2021", "Jan 15, 2021"
+ * - Hyphenated & abbreviated: "23-Sep-25", "23-Sep-2025", "23-sep-25"
+ * - Standard ISO strings: "2025-09-23"
+ * - Numeric delimiters: "09/23/2025", "23/09/2025", "2025/09/23", "09-23-2025"
+ * - Excel serial numbers & epoch timestamps
  */
 export function parseFlexibleDate(dateInput: string | Date | number | null | undefined): Date | null {
   if (dateInput === null || dateInput === undefined || dateInput === '') return null
@@ -77,76 +46,171 @@ export function parseFlexibleDate(dateInput: string | Date | number | null | und
       // Excel serial number (1 = Jan 1 1900, with Excel leap year quirk)
       const excelEpoch = new Date(1899, 11, 30)
       const dateFromExcel = new Date(excelEpoch.getTime() + num * 86400000)
-      if (!isNaN(dateFromExcel.getTime())) return dateFromExcel
+      if (!isNaN(dateFromExcel.getTime()) && dateFromExcel.getFullYear() >= 1900 && dateFromExcel.getFullYear() <= 2100) {
+        return dateFromExcel
+      }
     } else if (num > 100000) {
       const dateFromTs = new Date(num)
-      if (!isNaN(dateFromTs.getTime())) return dateFromTs
+      if (!isNaN(dateFromTs.getTime()) && dateFromTs.getFullYear() >= 1900 && dateFromTs.getFullYear() <= 2100) {
+        return dateFromTs
+      }
     }
   }
 
-  const str = String(dateInput).trim()
+  let str = String(dateInput).trim()
   if (!str) return null
 
-  // Try standard Date constructor
-  const standardDate = new Date(str)
-  if (!isNaN(standardDate.getTime()) && standardDate.getFullYear() > 1900 && standardDate.getFullYear() < 2100) {
-    return standardDate
-  }
+  // Pre-normalize common punctuation anomalies:
+  // e.g. "February 16,2026" -> insert space after comma
+  str = str.replace(/,/g, ', ').replace(/\s+/g, ' ').trim()
 
-  // Match text months e.g. "January 15, 2021" or "15 Jan 2021"
-  const monthMap: Record<string, number> = {
-    jan: 0, january: 0, feb: 1, february: 1, mar: 2, march: 2,
-    apr: 3, april: 3, may: 4, jun: 5, june: 5,
-    jul: 6, july: 6, aug: 7, august: 7, sep: 8, sept: 8, september: 8,
-    oct: 9, october: 9, nov: 10, november: 10, dec: 11, december: 11,
-  }
-
-  const textMatch = str.match(/^([a-zA-Z]+)[,\s]+(\d{1,2})(?:st|nd|rd|th)?[,\s]+(\d{2,4})$/)
-  if (textMatch) {
-    const m = monthMap[textMatch[1].toLowerCase()]
-    const d = parseInt(textMatch[2], 10)
-    let y = parseInt(textMatch[3], 10)
-    if (y < 100) y = y >= 30 ? 1900 + y : 2000 + y
-    if (m !== undefined && d >= 1 && d <= 31) {
-      return new Date(y, m, d)
+  // 1. Text Month representations: [Month] [Day], [Year] (e.g., "February 16, 2026", "Feb 16 2026")
+  const monthDayYearMatch = str.match(/^([a-zA-Z]+)[,\s]+(\d{1,2})(?:st|nd|rd|th)?[,\s]+(\d{2,4})$/)
+  if (monthDayYearMatch) {
+    const mStr = monthDayYearMatch[1].toLowerCase().replace(/\./g, '')
+    const m = MONTH_MAP[mStr]
+    const d = parseInt(monthDayYearMatch[2], 10)
+    const y = normalizeYear(parseInt(monthDayYearMatch[3], 10))
+    if (m !== undefined && d >= 1 && d <= 31 && y >= 1900 && y <= 2100) {
+      const parsed = new Date(y, m, d)
+      if (parsed.getFullYear() === y && parsed.getMonth() === m && parsed.getDate() === d) {
+        return parsed
+      }
     }
   }
 
-  const textMatch2 = str.match(/^(\d{1,2})(?:st|nd|rd|th)?[,\s\-/]+([a-zA-Z]+)[,\s\-/]+(\d{2,4})$/)
-  if (textMatch2) {
-    const d = parseInt(textMatch2[1], 10)
-    const m = monthMap[textMatch2[2].toLowerCase()]
-    let y = parseInt(textMatch2[3], 10)
-    if (y < 100) y = y >= 30 ? 1900 + y : 2000 + y
-    if (m !== undefined && d >= 1 && d <= 31) {
-      return new Date(y, m, d)
+  // 2. Day-Month-Year with text month (e.g., "23-Sep-25", "23-Sep-2025", "23 Sep 2025", "23/Sep/2025")
+  const dayMonthYearMatch = str.match(/^(\d{1,2})(?:st|nd|rd|th)?[,\s\-/]+([a-zA-Z]+)[,\s\-/]+(\d{2,4})$/)
+  if (dayMonthYearMatch) {
+    const d = parseInt(dayMonthYearMatch[1], 10)
+    const mStr = dayMonthYearMatch[2].toLowerCase().replace(/\./g, '')
+    const m = MONTH_MAP[mStr]
+    const y = normalizeYear(parseInt(dayMonthYearMatch[3], 10))
+    if (m !== undefined && d >= 1 && d <= 31 && y >= 1900 && y <= 2100) {
+      const parsed = new Date(y, m, d)
+      if (parsed.getFullYear() === y && parsed.getMonth() === m && parsed.getDate() === d) {
+        return parsed
+      }
     }
   }
 
-  // Match numeric parts e.g. "YYYY-MM-DD" or "MM/DD/YYYY"
-  const numMatch = str.match(/^(\d{1,4})[-/.](\d{1,2})[-/.](\d{1,4})$/)
-  if (numMatch) {
-    const p1 = parseInt(numMatch[1], 10)
-    const p2 = parseInt(numMatch[2], 10)
-    const p3 = parseInt(numMatch[3], 10)
+  // 3. Year-Month-Day with text month (e.g., "2025-Sep-23", "2025 September 23")
+  const yearMonthDayMatch = str.match(/^(\d{4})[,\s\-/]+([a-zA-Z]+)[,\s\-/]+(\d{1,2})(?:st|nd|rd|th)?$/)
+  if (yearMonthDayMatch) {
+    const y = parseInt(yearMonthDayMatch[1], 10)
+    const mStr = yearMonthDayMatch[2].toLowerCase().replace(/\./g, '')
+    const m = MONTH_MAP[mStr]
+    const d = parseInt(yearMonthDayMatch[3], 10)
+    if (m !== undefined && d >= 1 && d <= 31 && y >= 1900 && y <= 2100) {
+      const parsed = new Date(y, m, d)
+      if (parsed.getFullYear() === y && parsed.getMonth() === m && parsed.getDate() === d) {
+        return parsed
+      }
+    }
+  }
 
-    if (p1 > 1000) {
+  // 4. Numeric formats: "YYYY-MM-DD", "YYYY/MM/DD", "MM/DD/YYYY", "DD/MM/YYYY", "DD-MM-YY"
+  const numericMatch = str.match(/^(\d{1,4})[-/.](\d{1,2})[-/.](\d{1,4})$/)
+  if (numericMatch) {
+    const p1 = parseInt(numericMatch[1], 10)
+    const p2 = parseInt(numericMatch[2], 10)
+    const p3 = parseInt(numericMatch[3], 10)
+
+    if (p1 >= 1000) {
       // YYYY-MM-DD
-      return new Date(p1, p2 - 1, p3)
-    } else if (p3 > 1000 || p3 >= 30) {
-      let y = p3 < 100 ? (p3 >= 30 ? 1900 + p3 : 2000 + p3) : p3
-      // Disambiguate MM/DD vs DD/MM
+      const y = p1
+      const m = p2 - 1
+      const d = p3
+      if (m >= 0 && m <= 11 && d >= 1 && d <= 31) {
+        const parsed = new Date(y, m, d)
+        if (parsed.getFullYear() === y && parsed.getMonth() === m && parsed.getDate() === d) {
+          return parsed
+        }
+      }
+    } else {
+      // Either MM/DD/YYYY or DD/MM/YYYY or MM/DD/YY
+      const y = normalizeYear(p3)
       let m = p1 - 1
       let d = p2
+
+      // If p1 > 12 and p2 <= 12, then p1 is day and p2 is month (DD/MM/YYYY)
       if (p1 > 12 && p2 <= 12) {
         d = p1
         m = p2 - 1
       }
-      return new Date(y, m, d)
+
+      if (m >= 0 && m <= 11 && d >= 1 && d <= 31 && y >= 1900 && y <= 2100) {
+        const parsed = new Date(y, m, d)
+        if (parsed.getFullYear() === y && parsed.getMonth() === m && parsed.getDate() === d) {
+          return parsed
+        }
+      }
+    }
+  }
+
+  // 5. Fallback to standard JavaScript Date parser
+  const fallback = new Date(str)
+  if (!isNaN(fallback.getTime())) {
+    const y = fallback.getFullYear()
+    if (y >= 1900 && y <= 2100) {
+      return fallback
     }
   }
 
   return null
+}
+
+export function formatDate(dateInput: string | Date | number | null | undefined): string {
+  if (!dateInput) return '—'
+  const parsed = parseFlexibleDate(dateInput)
+  if (!parsed) {
+    return typeof dateInput === 'string' && dateInput.trim() ? dateInput.trim() : '—'
+  }
+
+  return new Intl.DateTimeFormat('en-PH', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  }).format(parsed)
+}
+
+export function formatDateTime(dateInput: string | Date | number | null | undefined): string {
+  if (!dateInput) return '—'
+  const parsed = parseFlexibleDate(dateInput)
+  if (!parsed) return String(dateInput)
+
+  return new Intl.DateTimeFormat('en-PH', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  }).format(parsed)
+}
+
+export function formatShortDate(dateInput: string | Date | number | null | undefined): string {
+  if (!dateInput) return '—'
+  const parsed = parseFlexibleDate(dateInput)
+  if (!parsed) {
+    return typeof dateInput === 'string' && dateInput.trim() ? dateInput.trim() : '—'
+  }
+
+  return new Intl.DateTimeFormat('en-PH', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  }).format(parsed)
+}
+
+export function toDateInputValue(dateInput: string | Date | number | null | undefined): string {
+  if (!dateInput) return ''
+  const parsed = parseFlexibleDate(dateInput)
+  if (!parsed) return ''
+  const year = parsed.getFullYear()
+  const month = String(parsed.getMonth() + 1).padStart(2, '0')
+  const day = String(parsed.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
 }
 
 export interface TenureBreakdown {
@@ -165,6 +229,7 @@ export interface TenureBreakdown {
  * Calculates tenure accurately considering calendar months and leap years.
  * If employee has an end date and is inactive/resigned/terminated, calculates duration between start and end.
  * Otherwise calculates duration between start and current date.
+ * Safely returns null if start date is invalid, empty, or in the future.
  */
 export function calculateTenure(
   startDateInput?: string | Date | number | null,
@@ -197,18 +262,9 @@ export function calculateTenure(
   const s = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate())
   const e = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate())
 
-  if (e.getTime() < s.getTime()) {
-    return {
-      years: 0,
-      months: 0,
-      days: 0,
-      formatted: '0 days',
-      shortFormatted: '0d',
-      totalDays: 0,
-      isEnded,
-      startFormatted: formatDate(s),
-      endFormatted: formatDate(e),
-    }
+  // If start date is in the future relative to reference/end date, return null (shows "—")
+  if (s.getTime() > e.getTime()) {
+    return null
   }
 
   let years = e.getFullYear() - s.getFullYear()
@@ -227,20 +283,31 @@ export function calculateTenure(
     years -= 1
   }
 
-  // Construct human-readable string: e.g. "5 years, 7 months, 7 days"
+  // Construct human-readable string with proper singular/plural grammar
+  // Examples: "5 years, 2 months", "1 year, 8 months, 12 days", "7 months, 4 days", "18 days", "0 days"
   const parts: string[] = []
-  if (years > 0) parts.push(`${years} ${years === 1 ? 'year' : 'years'}`)
-  if (months > 0) parts.push(`${months} ${months === 1 ? 'month' : 'months'}`)
-  if (days > 0 || parts.length === 0) parts.push(`${days} ${days === 1 ? 'day' : 'days'}`)
+  if (years > 0) {
+    parts.push(`${years} ${years === 1 ? 'year' : 'years'}`)
+  }
+  if (months > 0) {
+    parts.push(`${months} ${months === 1 ? 'month' : 'months'}`)
+  }
+  if (days > 0) {
+    parts.push(`${days} ${days === 1 ? 'day' : 'days'}`)
+  }
+  if (parts.length === 0) {
+    parts.push('0 days')
+  }
 
   const formatted = parts.join(', ')
 
-  // Construct short string: e.g. "5y 7m" or "5y 7m 7d"
+  // Construct short string: e.g. "5y 2m", "1y 8m", "7m 4d", "18d", "0d"
   const shortParts: string[] = []
   if (years > 0) shortParts.push(`${years}y`)
   if (months > 0) shortParts.push(`${months}m`)
-  if (days > 0 && years === 0) shortParts.push(`${days}d`)
-  const shortFormatted = shortParts.length > 0 ? shortParts.join(' ') : '0d'
+  if (days > 0 && (years === 0 || shortParts.length < 2)) shortParts.push(`${days}d`)
+  if (shortParts.length === 0) shortParts.push('0d')
+  const shortFormatted = shortParts.join(' ')
 
   const diffMs = Math.abs(e.getTime() - s.getTime())
   const totalDays = Math.round(diffMs / 86400000)
@@ -260,15 +327,16 @@ export function calculateTenure(
 
 /**
  * Returns a clean tenure display string for UI tables, detail views, and exports.
+ * Safely returns "—" if start date is missing, unparseable, or in the future.
  */
 export function getEmployeeTenureDisplay(
-  startDate?: string | Date | null,
-  endDate?: string | Date | null,
+  startDate?: string | Date | number | null,
+  endDate?: string | Date | number | null,
   status?: string,
   compact = false
 ): string {
   const result = calculateTenure(startDate, endDate, status)
-  if (!result) return 'N/A'
+  if (!result) return '—'
   return compact ? result.shortFormatted : result.formatted
 }
 

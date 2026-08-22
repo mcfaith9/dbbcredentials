@@ -7,12 +7,7 @@ import type {
   ImportExecutionReport,
 } from '@/types/employee'
 import { deriveItemName } from './storage'
-import {
-  calculateTenure,
-  getEmployeeTenureDisplay,
-  parseFlexibleDate,
-  formatDate,
-} from '@/lib/dateUtils'
+import { getEmployeeTenureDisplay, parseFlexibleDate, formatDate } from '@/lib/dateUtils'
 
 // Canonical Employee Field Names
 export const EMPLOYEE_FIELDS = [
@@ -68,24 +63,43 @@ const HEADER_MAPPINGS: Record<keyof EmployeeRecord, string[]> = {
   start_date: [
     'start date',
     'start_date',
+    'startdate',
+    'start-date',
+    'start',
     'date started',
+    'datestarted',
+    'date-started',
+    'date hired',
+    'datehired',
+    'date-hired',
     'hired date',
     'hire date',
+    'hiredate',
     'date of joining',
-    'date hired',
-    'start',
     'joining date',
+    'joiningdate',
+    'commencement date',
+    'employment date',
+    'start_dt',
+    'startdt',
   ],
   end_date: [
     'end date',
     'end_date',
+    'enddate',
+    'end-date',
+    'end',
     'date separated',
+    'dateseparated',
+    'date-separated',
     'separation date',
     'resignation date',
     'termination date',
     'date terminated',
     'exit date',
-    'end',
+    'date departed',
+    'end_dt',
+    'enddt',
   ],
   contract: [
     'contract',
@@ -209,7 +223,6 @@ const HEADER_MAPPINGS: Record<keyof EmployeeRecord, string[]> = {
     'emergency phone',
   ],
   work_email: ['work email', 'email', 'email address', 'e-mail', 'work_email', 'company email'],
-  tenure: ['tenure', 'calculated tenure', 'length of service'],
 }
 
 // -------------------------------------------------------------
@@ -218,6 +231,83 @@ const HEADER_MAPPINGS: Record<keyof EmployeeRecord, string[]> = {
 
 export function cleanText(val: any): string {
   if (val === null || val === undefined) return ''
+  return String(val).trim()
+}
+
+/**
+ * Normalizes column headers for flexible comparison
+ */
+export function normalizeHeaderKey(header: string): string {
+  if (!header) return ''
+  return header
+    .trim()
+    .toLowerCase()
+    .replace(/[\-_]/g, ' ')
+    .replace(/[^\w\s]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+/**
+ * Matches an uploaded file column header to an internal EmployeeRecord field
+ */
+export function matchHeaderToField(header: string): keyof EmployeeRecord | null {
+  if (!header) return null
+  const raw = header.trim().toLowerCase()
+  const norm = normalizeHeaderKey(header)
+  const stripped = header.toLowerCase().replace(/[^a-z0-9]/g, '')
+
+  // 1. Direct match in HEADER_MAPPINGS
+  for (const [field, aliases] of Object.entries(HEADER_MAPPINGS) as [keyof EmployeeRecord, string[]][]) {
+    if (
+      aliases.includes(raw) ||
+      aliases.includes(norm) ||
+      aliases.some((a) => a.replace(/[^a-z0-9]/g, '') === stripped)
+    ) {
+      return field
+    }
+  }
+
+  // 2. Fuzzy / substring match
+  for (const [field, aliases] of Object.entries(HEADER_MAPPINGS) as [keyof EmployeeRecord, string[]][]) {
+    if (
+      aliases.some((alias) => {
+        const aliasStripped = alias.replace(/[^a-z0-9]/g, '')
+        return (
+          raw === alias ||
+          norm === alias ||
+          raw.includes(alias) ||
+          norm.includes(alias) ||
+          (stripped.length >= 4 && stripped.includes(aliasStripped))
+        )
+      })
+    ) {
+      return field
+    }
+  }
+
+  return null
+}
+
+/**
+ * Preserves the original imported date value (e.g. "23-Feb-21", "March 11,2026", "February 16,2026")
+ * without erasing or corrupting it, while safely converting numbers/Dates to readable strings.
+ */
+export function preserveImportedDate(val: any): string {
+  if (val === null || val === undefined) return ''
+  if (typeof val === 'string') {
+    return val.trim()
+  }
+  if (val instanceof Date && !isNaN(val.getTime())) {
+    return formatDate(val)
+  }
+  if (typeof val === 'number') {
+    const parsed = parseFlexibleDate(val)
+    if (parsed) {
+      return formatDate(parsed)
+    }
+    return String(val).trim()
+  }
   return String(val).trim()
 }
 
@@ -556,6 +646,31 @@ export function mapRawHeadersToEmployeeFields(rawHeaders: string[]): Record<stri
   return mapping
 }
 
+function getImportedFieldValue(
+  rawRecord: Record<string, any>,
+  field: keyof EmployeeRecord
+): any {
+  // First: canonical mapped field
+  if (
+    rawRecord[field] !== undefined &&
+    rawRecord[field] !== null &&
+    rawRecord[field] !== ''
+  ) {
+    return rawRecord[field]
+  }
+
+  // Second: find the original column using the same header matcher
+  for (const [key, value] of Object.entries(rawRecord)) {
+    if (matchHeaderToField(key) === field) {
+      if (value !== undefined && value !== null && value !== '') {
+        return value
+      }
+    }
+  }
+
+  return ''
+}
+
 // -------------------------------------------------------------
 // Intelligent Duplicate & Redundancy Detection
 // -------------------------------------------------------------
@@ -567,33 +682,9 @@ export function analyzeImportRecord(
   alreadyAnalyzedBatch: AnalyzedImportRow[]
 ): AnalyzedImportRow {
   // Extract and map data
-  const rawBirthVal =
-    rawRecord.birthdate ??
-    rawRecord.BIRTHDATE ??
-    rawRecord['Birth Date'] ??
-    rawRecord['Birthdate'] ??
-    rawRecord['birth_date'] ??
-    rawRecord['DOB'] ??
-    rawRecord['dob'] ??
-    rawRecord['Date of Birth'] ??
-    rawRecord['bday'] ??
-    rawRecord['Birthday']
-
-  const rawStartVal =
-    rawRecord.start_date ??
-    rawRecord['START DATE'] ??
-    rawRecord['Start Date'] ??
-    rawRecord['Date Started'] ??
-    rawRecord['Date Hired'] ??
-    rawRecord.startDate
-
-  const rawEndVal =
-    rawRecord.end_date ??
-    rawRecord['END DATE'] ??
-    rawRecord['End Date'] ??
-    rawRecord['Date Separated'] ??
-    rawRecord['Date Terminated'] ??
-    rawRecord.endDate
+  const rawBirthVal = getImportedFieldValue(rawRecord, 'birthdate')
+  const rawStartVal = getImportedFieldValue(rawRecord, 'start_date')
+  const rawEndVal = getImportedFieldValue(rawRecord, 'end_date')
 
   const dateCheck = parseEmployeeDate(rawBirthVal)
   const startCheck = parseEmployeeDate(rawStartVal)
@@ -915,10 +1006,99 @@ export function analyzeImportRecord(
     }
   }
 
-  // Default recommended action based on confidence
+  // Default recommended action based on confidence.
+  //
+  // IMPORTANT:
+  // An exact duplicate should NOT automatically be skipped when
+  // the existing employee has missing/empty fields. The import
+  // should be allowed to fill those missing values.
+  //
+  // Example:
+  // Existing: start_date = ""
+  // Imported: start_date = "March 11, 2026"
+  // Result: merge/update instead of skip.
+
   let defaultAction: AnalyzedImportRow['action'] = 'new'
-  if (confidence === 'exact') {
-    defaultAction = 'skip'
+
+  if (confidence === 'exact' && bestMatch) {
+    const fieldsThatCanBeFilled: (keyof EmployeeRecord)[] = [
+      'department',
+      'position',
+      'competency',
+      'start_date',
+      'end_date',
+      'contract',
+      'status',
+      'sss_no',
+      'hdmf_no',
+      'phic_no',
+      'tin_no',
+      'birthdate',
+      'address',
+      'dmbb_id',
+      'contact_no',
+      'emergency_contact',
+      'emergency_contact_address',
+      'emergency_contact_no',
+      'work_email',
+    ]
+
+    const hasMissingExistingFields = fieldsThatCanBeFilled.some((field) => {
+      const importedValue = cleanText(data[field])
+
+      if (!importedValue) return false
+
+      let existingValue = ''
+
+      switch (field) {
+        case 'name':
+          existingValue = cleanText(bestMatch!.full_name || bestMatch!.name)
+          break
+
+        case 'dmbb_id':
+          existingValue = cleanText(bestMatch!.dmbb_id || bestMatch!.employee_id)
+          break
+
+        case 'hdmf_no':
+          existingValue = cleanText(bestMatch!.hdmf_no || bestMatch!.pagibig_no)
+          break
+
+        case 'phic_no':
+          existingValue = cleanText(bestMatch!.phic_no || bestMatch!.philhealth_no)
+          break
+
+        case 'contact_no':
+          existingValue = cleanText(
+            bestMatch!.contact_no ||
+            bestMatch!.work_phone ||
+            bestMatch!.phone
+          )
+          break
+
+        case 'address':
+          existingValue = cleanText(
+            bestMatch!.address ||
+            bestMatch!.office_address
+          )
+          break
+
+        case 'emergency_contact_no':
+          existingValue = cleanText(
+            bestMatch!.emergency_contact_no ||
+            bestMatch!.emergency_contact_phone
+          )
+          break
+
+        default:
+          existingValue = cleanText((bestMatch as any)[field])
+      }
+
+      return !existingValue
+    })
+
+    // If imported data contains something missing from the existing
+    // employee, merge it instead of skipping.
+    defaultAction = hasMissingExistingFields ? 'merge' : 'skip'
   } else if (confidence === 'possible') {
     defaultAction = 'review'
   }
