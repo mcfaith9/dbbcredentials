@@ -2,6 +2,7 @@
 import { ref, computed } from 'vue'
 import { useVault } from '@/composables/useVault'
 import { useToast } from '@/composables/useToast'
+import ConfirmDeleteDialog from '@/components/ui/ConfirmDeleteDialog.vue'
 import {
   Folder,
   Plus,
@@ -23,6 +24,7 @@ const { categories, activeItems, addCategory, deleteCategory } = useVault()
 const { success, warning } = useToast()
 
 const newCategoryName = ref('')
+const categoryToDelete = ref<{ id: string; name: string } | null>(null)
 
 const categoryStats = computed(() => {
   return categories.value.map((cat) => {
@@ -44,11 +46,16 @@ function handleAdd() {
   newCategoryName.value = ''
 }
 
-function handleDelete(id: string, name: string) {
-  if (confirm(`Are you sure you want to delete the category "${name}"? Existing items will keep their category name.`)) {
-    deleteCategory(id)
-    warning('Category Deleted', `Deleted "${name}".`)
-  }
+function promptDelete(id: string, name: string) {
+  categoryToDelete.value = { id, name }
+}
+
+function confirmDelete() {
+  if (!categoryToDelete.value) return
+  const { id, name } = categoryToDelete.value
+  deleteCategory(id)
+  categoryToDelete.value = null
+  warning('Category Deleted', `Deleted "${name}".`)
 }
 
 function getIconComponent(iconName?: string) {
@@ -132,7 +139,7 @@ function getIconComponent(iconName?: string) {
 
         <button
           v-if="cat.is_custom"
-          @click="handleDelete(cat.id, cat.name)"
+          @click="promptDelete(cat.id, cat.name)"
           class="opacity-0 group-hover:opacity-100 p-2 text-muted-foreground hover:text-rose-600 rounded-lg hover:bg-rose-500/10"
           title="Delete Category"
         >
@@ -140,5 +147,17 @@ function getIconComponent(iconName?: string) {
         </button>
       </div>
     </div>
+
+    <!-- Confirm Category Delete Dialog -->
+    <ConfirmDeleteDialog
+      :open="!!categoryToDelete"
+      title="Delete Category?"
+      :itemName="categoryToDelete ? categoryToDelete.name : ''"
+      description="Are you sure you want to delete this category? Existing items will keep their category name."
+      confirmText="Delete Category"
+      @update:open="(val) => { if (!val) categoryToDelete = null }"
+      @confirm="confirmDelete"
+      @cancel="categoryToDelete = null"
+    />
   </div>
 </template>

@@ -7,12 +7,21 @@ import type {
   ImportExecutionReport,
 } from '@/types/employee'
 import { deriveItemName } from './storage'
+import {
+  calculateTenure,
+  getEmployeeTenureDisplay,
+  parseFlexibleDate,
+  formatDate,
+} from '@/lib/dateUtils'
 
 // Canonical Employee Field Names
 export const EMPLOYEE_FIELDS = [
   { key: 'name', label: "Employee's Name", required: true },
   { key: 'department', label: 'Department', required: false },
   { key: 'position', label: 'Position', required: false },
+  { key: 'competency', label: 'Competency (For LBT)', required: false },
+  { key: 'start_date', label: 'Start Date', required: false },
+  { key: 'end_date', label: 'End Date', required: false },
   { key: 'contract', label: 'Contract', required: false },
   { key: 'status', label: 'Status', required: false },
   { key: 'sss_no', label: 'SSS No.', required: false },
@@ -22,8 +31,10 @@ export const EMPLOYEE_FIELDS = [
   { key: 'birthdate', label: 'Birthdate', required: false },
   { key: 'address', label: 'Address', required: false },
   { key: 'dmbb_id', label: 'DMBB ID No.', required: false },
-  { key: 'contact_no', label: 'Contact No.', required: false },
+  { key: 'contact_no', label: 'Employee Contact No.', required: false },
   { key: 'emergency_contact', label: 'In Case of Emergency', required: false },
+  { key: 'emergency_contact_address', label: 'Emergency Contact Address', required: false },
+  { key: 'emergency_contact_no', label: 'In Case of Emergency Contact No.', required: false },
   { key: 'work_email', label: 'Work Email', required: false },
 ] as const
 
@@ -44,6 +55,38 @@ const HEADER_MAPPINGS: Record<keyof EmployeeRecord, string[]> = {
   ],
   department: ['department', 'dept', 'division', 'unit', 'assigned department', 'department / division'],
   position: ['position', 'job title', 'job_title', 'title', 'role', 'designation', 'occupation', 'pos'],
+  competency: [
+    'competency (for lbt)',
+    'competency (for lbt) ',
+    'competency',
+    'competency for lbt',
+    'lbt competency',
+    'competencies',
+    'lbt',
+    'skill level',
+  ],
+  start_date: [
+    'start date',
+    'start_date',
+    'date started',
+    'hired date',
+    'hire date',
+    'date of joining',
+    'date hired',
+    'start',
+    'joining date',
+  ],
+  end_date: [
+    'end date',
+    'end_date',
+    'date separated',
+    'separation date',
+    'resignation date',
+    'termination date',
+    'date terminated',
+    'exit date',
+    'end',
+  ],
   contract: [
     'contract',
     'contract type',
@@ -51,7 +94,6 @@ const HEADER_MAPPINGS: Record<keyof EmployeeRecord, string[]> = {
     'type',
     'status of employment',
     'employment_type',
-    'tenure',
   ],
   status: ['status', 'employment status', 'active status', 'employee status', 'state'],
   sss_no: ['sss no.', 'sss no', 'sss number', 'sss #', 'sss', 'sss_no', 'sss_number', 'social security system'],
@@ -95,7 +137,7 @@ const HEADER_MAPPINGS: Record<keyof EmployeeRecord, string[]> = {
     'birthday',
     'petsa ng kapanganakan',
   ],
-  address: ['address', 'home address', 'office address', 'residential address', 'current address', 'tirahan'],
+  address: ['address', 'home address', 'office address', 'residential address', 'current address', 'employee address', 'tirahan'],
   dmbb_id: [
     'dmbb id no.',
     'dmbb id no',
@@ -113,6 +155,9 @@ const HEADER_MAPPINGS: Record<keyof EmployeeRecord, string[]> = {
     'company id',
   ],
   contact_no: [
+    'employee contact no.',
+    'employee contact no',
+    'employee contact number',
     'contact no.',
     'contact no',
     'contact number',
@@ -134,12 +179,37 @@ const HEADER_MAPPINGS: Record<keyof EmployeeRecord, string[]> = {
     'ice',
     'emergency contact',
     'emergency contact person',
+    'emergency contact name',
+    'in case of emergency contact',
+    'ice name',
+  ],
+  emergency_contact_address: [
+    'emergency contact address',
+    'emergency address',
+    'ice address',
+    'in case of emergency address',
+    'in case of emergency contact address',
+    'ice contact address',
+  ],
+  emergency_contact_no: [
+    'in case of emergency contact no.',
+    'in case of emergency contact no',
+    'incase of emergency contact no.',
+    'incase of emergency contact no',
+    'in case of emergency contact number',
+    'emergency contact no.',
+    'emergency contact no',
+    'emergency contact number',
     'emergency no.',
     'emergency number',
-    'emergency_contact',
-    'in case of emergency contact',
+    'ice contact no',
+    'ice contact no.',
+    'ice contact number',
+    'ice phone',
+    'emergency phone',
   ],
   work_email: ['work email', 'email', 'email address', 'e-mail', 'work_email', 'company email'],
+  tenure: ['tenure', 'calculated tenure', 'length of service'],
 }
 
 // -------------------------------------------------------------
@@ -509,12 +579,39 @@ export function analyzeImportRecord(
     rawRecord['bday'] ??
     rawRecord['Birthday']
 
+  const rawStartVal =
+    rawRecord.start_date ??
+    rawRecord['START DATE'] ??
+    rawRecord['Start Date'] ??
+    rawRecord['Date Started'] ??
+    rawRecord['Date Hired'] ??
+    rawRecord.startDate
+
+  const rawEndVal =
+    rawRecord.end_date ??
+    rawRecord['END DATE'] ??
+    rawRecord['End Date'] ??
+    rawRecord['Date Separated'] ??
+    rawRecord['Date Terminated'] ??
+    rawRecord.endDate
+
   const dateCheck = parseEmployeeDate(rawBirthVal)
+  const startCheck = parseEmployeeDate(rawStartVal)
+  const endCheck = parseEmployeeDate(rawEndVal)
 
   const data: EmployeeRecord = {
     name: cleanText(rawRecord.name || rawRecord.full_name || rawRecord["EMPLOYEE'S NAME"] || rawRecord['Employee Name']),
     department: cleanText(rawRecord.department || rawRecord.Department),
     position: cleanText(rawRecord.position || rawRecord.POSITION || rawRecord['Job Title']),
+    competency: cleanText(
+      rawRecord.competency ||
+        rawRecord['Competency (For LBT)'] ||
+        rawRecord['Competency (For LBT) '] ||
+        rawRecord['COMPETENCY (FOR LBT)'] ||
+        rawRecord['Competency']
+    ),
+    start_date: startCheck.isValid ? startCheck.display : cleanText(rawStartVal),
+    end_date: endCheck.isValid ? endCheck.display : cleanText(rawEndVal),
     contract: cleanText(rawRecord.contract || rawRecord.CONTRACT || 'Regular'),
     status: cleanText(rawRecord.status || rawRecord.STATUS || 'Active'),
     sss_no: cleanText(rawRecord.sss_no || rawRecord['SSS NO.'] || rawRecord['SSS No.'] || rawRecord.sss),
@@ -544,6 +641,8 @@ export function analyzeImportRecord(
     ),
     contact_no: cleanText(
       rawRecord.contact_no ||
+        rawRecord['EMPLOYEE CONTACT NO.'] ||
+        rawRecord['Employee Contact No.'] ||
         rawRecord['CONTACT NO.'] ||
         rawRecord['Contact No.'] ||
         rawRecord.phone ||
@@ -555,7 +654,28 @@ export function analyzeImportRecord(
         rawRecord['In Case of Emergency'] ||
         rawRecord.ice
     ),
+    emergency_contact_address: cleanText(
+      rawRecord.emergency_contact_address ||
+        rawRecord.emergencyContactAddress ||
+        rawRecord['EMERGENCY CONTACT ADDRESS'] ||
+        rawRecord['Emergency Contact Address'] ||
+        rawRecord['Emergency Address']
+    ),
+    emergency_contact_no: cleanText(
+      rawRecord.emergency_contact_no ||
+        rawRecord.emergencyContactNo ||
+        rawRecord['INCASE OF EMERGENCY CONTACT NO.'] ||
+        rawRecord['IN CASE OF EMERGENCY CONTACT NO.'] ||
+        rawRecord['In Case of Emergency Contact No.'] ||
+        rawRecord['Emergency Contact No.'] ||
+        rawRecord.emergency_contact_phone
+    ),
     work_email: cleanText(rawRecord.work_email || rawRecord.email || rawRecord['Work Email']),
+    tenure: getEmployeeTenureDisplay(
+      startCheck.isValid ? startCheck.display : rawStartVal,
+      endCheck.isValid ? endCheck.display : rawEndVal,
+      rawRecord.status || 'Active'
+    ),
   }
 
   // Missing info & Format validation checks
@@ -573,6 +693,12 @@ export function analyzeImportRecord(
     if (!dateCheck.isValid) {
       formatWarnings.push(`Birthdate "${cleanText(rawBirthVal)}" could not be parsed into a calendar date`)
       missingInfoReasons.push(`Invalid birthdate format: "${cleanText(rawBirthVal)}"`)
+    }
+  }
+
+  if (rawStartVal !== null && rawStartVal !== undefined && String(rawStartVal).trim() !== '') {
+    if (!startCheck.isValid) {
+      formatWarnings.push(`Start Date "${cleanText(rawStartVal)}" could not be parsed into a calendar date`)
     }
   }
 
@@ -746,6 +872,9 @@ export function analyzeImportRecord(
       'name',
       'department',
       'position',
+      'competency',
+      'start_date',
+      'end_date',
       'contract',
       'status',
       'sss_no',
@@ -757,6 +886,8 @@ export function analyzeImportRecord(
       'dmbb_id',
       'contact_no',
       'emergency_contact',
+      'emergency_contact_address',
+      'emergency_contact_no',
       'work_email',
     ]
 
@@ -767,7 +898,8 @@ export function analyzeImportRecord(
           (f === 'name' ? bestMatch.full_name || bestMatch.name : '') ||
           (f === 'dmbb_id' ? bestMatch.employee_id : '') ||
           (f === 'contact_no' ? bestMatch.work_phone || bestMatch.phone : '') ||
-          (f === 'address' ? bestMatch.office_address : '')
+          (f === 'address' ? bestMatch.office_address : '') ||
+          (f === 'emergency_contact_no' ? (bestMatch as any).emergency_contact_phone : '')
       )
 
       if (importedVal && existingVal && importedVal !== existingVal) {
@@ -885,7 +1017,7 @@ export async function parseEmployeeImportFile(file: File): Promise<{
         rowObj[headerName] = cellVal
       })
 
-      // Also map standard Vault item attributes if it's a Vault export JSON
+      // Also map standard Vault item / alternative camelCase attributes
       if (rawItem.full_name && !rowObj.name) rowObj.name = rawItem.full_name
       if (rawItem.name && !rowObj.name) rowObj.name = rawItem.name
       if (rawItem.employee_id && !rowObj.dmbb_id) rowObj.dmbb_id = rawItem.employee_id
@@ -894,6 +1026,14 @@ export async function parseEmployeeImportFile(file: File): Promise<{
       if (rawItem.office_address && !rowObj.address) rowObj.address = rawItem.office_address
       if (rawItem.pagibig_no && !rowObj.hdmf_no) rowObj.hdmf_no = rawItem.pagibig_no
       if (rawItem.philhealth_no && !rowObj.phic_no) rowObj.phic_no = rawItem.philhealth_no
+      if (rawItem.startDate && !rowObj.start_date) rowObj.start_date = rawItem.startDate
+      if (rawItem.endDate && !rowObj.end_date) rowObj.end_date = rawItem.endDate
+      if (rawItem.emergencyContactAddress && !rowObj.emergency_contact_address) {
+        rowObj.emergency_contact_address = rawItem.emergencyContactAddress
+      }
+      if (rawItem.emergencyContactNo && !rowObj.emergency_contact_no) {
+        rowObj.emergency_contact_no = rawItem.emergencyContactNo
+      }
 
       // Filter out obvious sample rows
       const nameVal = String(rowObj.name || rowObj["EMPLOYEE'S NAME"] || '').toLowerCase()
@@ -940,8 +1080,62 @@ export async function parseEmployeeImportFile(file: File): Promise<{
     throw new Error('No valid header row could be found in the file.')
   }
 
-  const rawHeaders = (jsonData[headerRowIndex] as any[]).map((h) => String(h || '').trim())
-  const headerMapping = mapRawHeadersToEmployeeFields(rawHeaders)
+  const rawHeaderRow = jsonData[headerRowIndex] as any[]
+  const rawHeaders: string[] = []
+  // Map per column index to preserve disambiguation of duplicate headers (e.g. 1st ADDRESS vs 2nd ADDRESS)
+  const colIndexToMappedField: (keyof EmployeeRecord | null)[] = []
+  let seenFirstAddress = false
+  let seenEmergencySection = false
+
+  rawHeaderRow.forEach((h, colIdx) => {
+    const headerStr = String(h || '').trim()
+    rawHeaders.push(headerStr)
+    const lower = headerStr.toLowerCase()
+
+    if (lower.includes('emergency') || lower.includes('in case of') || lower.includes('ice')) {
+      seenEmergencySection = true
+    }
+
+    if (lower === 'address' || lower === 'home address' || lower === 'residential address') {
+      if (!seenFirstAddress && !seenEmergencySection) {
+        colIndexToMappedField[colIdx] = 'address'
+        seenFirstAddress = true
+      } else {
+        colIndexToMappedField[colIdx] = 'emergency_contact_address'
+      }
+    } else if (
+      lower === 'emergency contact address' ||
+      lower === 'emergency address' ||
+      lower === 'ice address' ||
+      lower === 'ice contact address'
+    ) {
+      colIndexToMappedField[colIdx] = 'emergency_contact_address'
+    } else {
+      // Fuzzy lookup with aliases
+      let matched: keyof EmployeeRecord | null = null
+      for (const [field, aliases] of Object.entries(HEADER_MAPPINGS) as [keyof EmployeeRecord, string[]][]) {
+        if (aliases.includes(lower)) {
+          matched = field
+          break
+        }
+      }
+      if (!matched) {
+        for (const [field, aliases] of Object.entries(HEADER_MAPPINGS) as [keyof EmployeeRecord, string[]][]) {
+          if (aliases.some((alias) => lower === alias || lower.includes(alias))) {
+            matched = field
+            break
+          }
+        }
+      }
+      colIndexToMappedField[colIdx] = matched
+    }
+  })
+
+  // Also build global dictionary header mapping for UI display
+  const headerMapping: Record<string, keyof EmployeeRecord | null> = {}
+  rawHeaders.forEach((h, idx) => {
+    headerMapping[h] = colIndexToMappedField[idx] || null
+  })
 
   const rows: Record<string, any>[] = []
   for (let i = headerRowIndex + 1; i < jsonData.length; i++) {
@@ -952,12 +1146,15 @@ export async function parseEmployeeImportFile(file: File): Promise<{
 
     const rowObj: Record<string, any> = {}
     rawHeaders.forEach((headerName, colIdx) => {
-      const mappedField = headerMapping[headerName]
+      const mappedField = colIndexToMappedField[colIdx]
       const cellVal = rawRow[colIdx]
       if (mappedField) {
         rowObj[mappedField] = cellVal
       }
-      rowObj[headerName] = cellVal
+      // If header name not yet populated or if it's the primary header
+      if (!rowObj[headerName]) {
+        rowObj[headerName] = cellVal
+      }
     })
 
     // Filter out obvious sample rows
@@ -989,6 +1186,9 @@ export function mergeEmployeeRecord(existing: VaultItem, imported: EmployeeRecor
     { target: 'name', source: 'name' },
     { target: 'department', source: 'department' },
     { target: 'position', source: 'position' },
+    { target: 'competency', source: 'competency' },
+    { target: 'start_date', source: 'start_date' },
+    { target: 'end_date', source: 'end_date' },
     { target: 'contract', source: 'contract' },
     { target: 'status', source: 'status' },
     { target: 'sss_no', source: 'sss_no' },
@@ -1004,6 +1204,8 @@ export function mergeEmployeeRecord(existing: VaultItem, imported: EmployeeRecor
     { target: 'phone', source: 'contact_no' },
     { target: 'contact_no', source: 'contact_no' },
     { target: 'emergency_contact', source: 'emergency_contact' },
+    { target: 'emergency_contact_address', source: 'emergency_contact_address' },
+    { target: 'emergency_contact_no', source: 'emergency_contact_no', fallbackTarget: 'emergency_contact_phone' },
     { target: 'work_email', source: 'work_email' },
   ]
 
@@ -1039,6 +1241,9 @@ export function employeeRecordToVaultItem(rec: EmployeeRecord): Partial<VaultIte
     full_name: rec.name.trim(),
     department: rec.department.trim(),
     position: rec.position.trim(),
+    competency: rec.competency?.trim() || '',
+    start_date: rec.start_date?.trim() || '',
+    end_date: rec.end_date?.trim() || '',
     contract: rec.contract.trim() || 'Regular',
     status: rec.status.trim() || 'Active',
     sss_no: rec.sss_no.trim(),
@@ -1056,6 +1261,9 @@ export function employeeRecordToVaultItem(rec: EmployeeRecord): Partial<VaultIte
     work_phone: rec.contact_no.trim(),
     phone: rec.contact_no.trim(),
     emergency_contact: rec.emergency_contact.trim(),
+    emergency_contact_address: rec.emergency_contact_address?.trim() || '',
+    emergency_contact_no: rec.emergency_contact_no?.trim() || '',
+    emergency_contact_phone: rec.emergency_contact_no?.trim() || '',
     work_email: rec.work_email?.trim() || '',
     category: 'General',
     company: 'DBB',
@@ -1063,7 +1271,7 @@ export function employeeRecordToVaultItem(rec: EmployeeRecord): Partial<VaultIte
 }
 
 // -------------------------------------------------------------
-// Export Employees to Excel / CSV
+// Export Employees to Excel / CSV / JSON
 // -------------------------------------------------------------
 
 export function prepareEmployeeExportRows(items: VaultItem[]): Record<string, string>[] {
@@ -1071,6 +1279,9 @@ export function prepareEmployeeExportRows(items: VaultItem[]): Record<string, st
     "EMPLOYEE'S NAME": item.full_name || item.name || '',
     Department: item.department || '',
     POSITION: item.position || '',
+    'Competency (For LBT)': item.competency || '',
+    'START DATE': item.start_date || '',
+    'END DATE': item.end_date || '',
     CONTRACT: item.contract || 'Regular',
     STATUS: item.status || 'Active',
     'SSS NO.': item.sss_no || '',
@@ -1080,8 +1291,11 @@ export function prepareEmployeeExportRows(items: VaultItem[]): Record<string, st
     BIRTHDATE: item.birthdate || '',
     ADDRESS: item.address || item.office_address || '',
     'DMBB ID NO.': item.dmbb_id || item.employee_id || '',
-    'CONTACT NO.': item.contact_no || item.work_phone || item.phone || '',
+    'EMPLOYEE CONTACT NO.': item.contact_no || item.work_phone || item.phone || '',
     'IN CASE OF EMERGENCY': item.emergency_contact || '',
+    'EMERGENCY CONTACT ADDRESS': item.emergency_contact_address || '',
+    'IN CASE OF EMERGENCY CONTACT NO.': item.emergency_contact_no || item.emergency_contact_phone || '',
+    TENURE: getEmployeeTenureDisplay(item.start_date, item.end_date, item.status),
     'WORK EMAIL': item.work_email || '',
   }))
 }
@@ -1114,6 +1328,9 @@ export function exportEmployeesToFile(
     { wch: 28 }, // Name
     { wch: 18 }, // Dept
     { wch: 22 }, // Position
+    { wch: 20 }, // Competency (For LBT)
+    { wch: 16 }, // Start Date
+    { wch: 16 }, // End Date
     { wch: 14 }, // Contract
     { wch: 12 }, // Status
     { wch: 16 }, // SSS
@@ -1123,8 +1340,11 @@ export function exportEmployeesToFile(
     { wch: 16 }, // Birthdate
     { wch: 32 }, // Address
     { wch: 16 }, // DMBB ID
-    { wch: 16 }, // Contact No
-    { wch: 26 }, // ICE
+    { wch: 20 }, // Contact No
+    { wch: 24 }, // ICE Contact
+    { wch: 32 }, // ICE Address
+    { wch: 24 }, // ICE Contact No
+    { wch: 22 }, // Tenure
     { wch: 26 }, // Work Email
   ]
 
@@ -1144,6 +1364,9 @@ export function downloadEmployeeTemplate(format: 'json' | 'xlsx' | 'csv' = 'json
       "EMPLOYEE'S NAME": 'Abalo, Oliver Bacsinila',
       Department: 'Warehouse',
       POSITION: 'Expediter',
+      'Competency (For LBT)': 'L3 - Senior Logistics Handler',
+      'START DATE': 'August 10, 2021',
+      'END DATE': '',
       CONTRACT: 'Regular',
       STATUS: 'Active',
       'SSS NO.': '06-1802091-9',
@@ -1151,16 +1374,21 @@ export function downloadEmployeeTemplate(format: 'json' | 'xlsx' | 'csv' = 'json
       'PHIC NO.': '12-025938426-0',
       'TIN NO.': '225-254-775-000',
       BIRTHDATE: 'June 19, 1976',
-      ADDRESS: 'Laguna, Philippines',
+      ADDRESS: 'Blk 4 Lot 12 Sunshine Village, Calamba, Laguna',
       'DMBB ID NO.': '2022-00130',
-      'CONTACT NO.': '0917-123-4567',
-      'IN CASE OF EMERGENCY': 'Maria Abalo - 0918-987-6543',
+      'EMPLOYEE CONTACT NO.': '0917-123-4567',
+      'IN CASE OF EMERGENCY': 'Maria Abalo',
+      'EMERGENCY CONTACT ADDRESS': 'Blk 4 Lot 12 Sunshine Village, Calamba, Laguna',
+      'IN CASE OF EMERGENCY CONTACT NO.': '0918-987-6543',
       'WORK EMAIL': 'oliver.abalo@dbb.com',
     },
     {
       "EMPLOYEE'S NAME": 'Dela Cruz, Juan Santos',
       Department: 'IT & Infrastructure',
       POSITION: 'Systems Administrator',
+      'Competency (For LBT)': 'L4 - Network Security Specialist',
+      'START DATE': 'January 15, 2019',
+      'END DATE': '',
       CONTRACT: 'Regular',
       STATUS: 'Active',
       'SSS NO.': '34-5678901-2',
@@ -1168,10 +1396,12 @@ export function downloadEmployeeTemplate(format: 'json' | 'xlsx' | 'csv' = 'json
       'PHIC NO.': '01-234567890-1',
       'TIN NO.': '123-456-789-000',
       BIRTHDATE: 'August 15, 1988',
-      ADDRESS: 'Makati City, Metro Manila',
+      ADDRESS: '123 Salcedo St, Legaspi Village, Makati City',
       'DMBB ID NO.': '2021-00045',
-      'CONTACT NO.': '0918-555-1234',
-      'IN CASE OF EMERGENCY': 'Clara Dela Cruz - 0917-222-3333',
+      'EMPLOYEE CONTACT NO.': '0918-555-1234',
+      'IN CASE OF EMERGENCY': 'Clara Dela Cruz',
+      'EMERGENCY CONTACT ADDRESS': '123 Salcedo St, Legaspi Village, Makati City',
+      'IN CASE OF EMERGENCY CONTACT NO.': '0917-222-3333',
       'WORK EMAIL': 'juan.delacruz@dbb.com',
     },
   ]
@@ -1192,6 +1422,9 @@ export function downloadEmployeeTemplate(format: 'json' | 'xlsx' | 'csv' = 'json
     { wch: 35 },
     { wch: 18 },
     { wch: 22 },
+    { wch: 24 },
+    { wch: 16 },
+    { wch: 16 },
     { wch: 14 },
     { wch: 12 },
     { wch: 16 },
@@ -1201,8 +1434,10 @@ export function downloadEmployeeTemplate(format: 'json' | 'xlsx' | 'csv' = 'json
     { wch: 16 },
     { wch: 32 },
     { wch: 16 },
-    { wch: 16 },
+    { wch: 20 },
+    { wch: 24 },
     { wch: 32 },
+    { wch: 24 },
     { wch: 26 },
   ]
 

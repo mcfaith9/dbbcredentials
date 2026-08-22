@@ -7,6 +7,7 @@ import { useToast } from '@/composables/useToast'
 import { calculatePasswordStrength } from '@/services/crypto'
 import { formatDate, formatDateTime, formatPhilippinePhone } from '@/lib/dateUtils'
 import CredentialTypeIcon from './CredentialTypeIcon.vue'
+import ConfirmDeleteDialog from '@/components/ui/ConfirmDeleteDialog.vue'
 import {
   Star,
   Edit,
@@ -45,6 +46,7 @@ const { success } = useToast()
 
 const showPassword = ref(false)
 const copiedField = ref<string | null>(null)
+const showDeleteConfirm = ref(false)
 
 watch(
   () => props.item?.id,
@@ -164,7 +166,7 @@ function handleTrash() {
         </button>
 
         <button
-          @click="handleTrash"
+          @click="showDeleteConfirm = true"
           class="p-2 rounded-xl border border-border hover:bg-rose-500/10 text-muted-foreground hover:text-rose-600 hover:border-rose-500/30"
           title="Move to Trash"
         >
@@ -985,5 +987,17 @@ function handleTrash() {
         </div>
       </div>
     </div>
+
+    <!-- Delete Confirmation Dialog -->
+    <ConfirmDeleteDialog
+      v-model:open="showDeleteConfirm"
+      title="Move to Trash?"
+      :itemName="item.name"
+      confirmText="Move to Trash"
+      @confirm="() => {
+        showDeleteConfirm = false
+        handleTrash()
+      }"
+    />
   </div>
 </template>

@@ -120,7 +120,8 @@ const { copyToClipboard } = useClipboard()
     <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
       <!-- Total Records -->
       <div
-        class="p-4 rounded-xl border border-border bg-card hover:border-primary/50 cursor-pointer space-y-2 group shadow-xs"
+        @click="emit('navigate', 'all')"
+        class="p-4 rounded-xl border border-border bg-card hover:border-primary/50 cursor-pointer space-y-2 group shadow-xs transition-colors"
       >
         <div class="flex items-center justify-between">
           <span class="text-xs font-medium text-muted-foreground">All Records</span>
@@ -133,7 +134,8 @@ const { copyToClipboard } = useClipboard()
 
       <!-- Infrastructure -->
       <div
-        class="p-4 rounded-xl border border-border bg-card hover:border-purple-500/50 cursor-pointer space-y-2 group shadow-xs"
+        @click="emit('navigate', 'servers')"
+        class="p-4 rounded-xl border border-border bg-card hover:border-purple-500/50 cursor-pointer space-y-2 group shadow-xs transition-colors"
       >
         <div class="flex items-center justify-between">
           <span class="text-xs font-medium text-muted-foreground">Infrastructure</span>
@@ -148,7 +150,8 @@ const { copyToClipboard } = useClipboard()
 
       <!-- Assets & Licenses -->
       <div
-        class="p-4 rounded-xl border border-border bg-card hover:border-amber-500/50 cursor-pointer space-y-2 group shadow-xs"
+        @click="emit('navigate', 'domains')"
+        class="p-4 rounded-xl border border-border bg-card hover:border-amber-500/50 cursor-pointer space-y-2 group shadow-xs transition-colors"
       >
         <div class="flex items-center justify-between">
           <span class="text-xs font-medium text-muted-foreground">Assets & Domains</span>
@@ -163,7 +166,8 @@ const { copyToClipboard } = useClipboard()
 
       <!-- Staff Identities -->
       <div
-        class="p-4 rounded-xl border border-border bg-card hover:border-blue-500/50 cursor-pointer space-y-2 group shadow-xs"
+        @click="emit('navigate', 'identities')"
+        class="p-4 rounded-xl border border-border bg-card hover:border-blue-500/50 cursor-pointer space-y-2 group shadow-xs transition-colors"
       >
         <div class="flex items-center justify-between">
           <span class="text-xs font-medium text-muted-foreground">Identities</span>
@@ -176,7 +180,8 @@ const { copyToClipboard } = useClipboard()
 
       <!-- Security Weak/Reused -->
       <div
-        class="p-4 rounded-xl border border-border bg-card hover:border-rose-500/50 cursor-pointer space-y-2 group shadow-xs"
+        @click="emit('open-security')"
+        class="p-4 rounded-xl border border-border bg-card hover:border-rose-500/50 cursor-pointer space-y-2 group shadow-xs transition-colors"
       >
         <div class="flex items-center justify-between">
           <span class="text-xs font-medium text-muted-foreground">Weak / Reused</span>
@@ -191,7 +196,8 @@ const { copyToClipboard } = useClipboard()
 
       <!-- Vault Security Score -->
       <div
-        class="p-4 rounded-xl border border-border bg-card hover:border-emerald-500/50 cursor-pointer space-y-2 group shadow-xs"
+        @click="emit('open-security')"
+        class="p-4 rounded-xl border border-border bg-card hover:border-emerald-500/50 cursor-pointer space-y-2 group shadow-xs transition-colors"
       >
         <div class="flex items-center justify-between">
           <span class="text-xs font-medium text-muted-foreground">Security Health</span>

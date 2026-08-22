@@ -17,12 +17,18 @@ import {
   Plus,
   X,
   Lock,
+  ChevronDown,
+  Check,
 } from '@lucide/vue'
 
 const props = defineProps<{
   open: boolean
   itemToEdit?: VaultItem | null
   initialType?: VaultItemType
+  initialCategory?: string
+  initialCompany?: string
+  initialDepartment?: string
+  initialTag?: string
 }>()
 
 const emit = defineEmits<{
@@ -46,6 +52,7 @@ const showPassword = ref(false)
 const newCategoryInput = ref('')
 const showNewCategoryBox = ref(false)
 const newTagInput = ref('')
+const showTypeDropdown = ref(false)
 
 const credentialTypes: { type: VaultItemType; label: string; group: string }[] = [
   { type: 'password', label: 'Password / Login', group: 'Credentials' },
@@ -61,6 +68,162 @@ const credentialTypes: { type: VaultItemType; label: string; group: string }[] =
   { type: 'note', label: 'Secure Note', group: 'Organization' },
   { type: 'identity', label: 'Employee Profile', group: 'Organization' },
 ]
+
+const credentialTypeMeta: Record<
+  VaultItemType,
+  {
+    label: string
+    addTitle: string
+    editTitle: string
+    subtitle: string
+    defaultCategory: string
+    group: string
+    actionLabel: string
+  }
+> = {
+  password: {
+    label: 'Login / Password',
+    addTitle: 'Add Login Credential',
+    editTitle: 'Edit Login Credential',
+    subtitle: 'Store encrypted account usernames, passwords, and service URLs.',
+    defaultCategory: 'Company Credentials',
+    group: 'Credentials',
+    actionLabel: 'Credential',
+  },
+  email_account: {
+    label: 'Email Account',
+    addTitle: 'Add Email Account',
+    editTitle: 'Edit Email Account',
+    subtitle: 'Store company webmail, IMAP/SMTP configurations, and recovery settings.',
+    defaultCategory: 'Email Accounts',
+    group: 'Credentials',
+    actionLabel: 'Email Account',
+  },
+  social_account: {
+    label: 'Social Media Account',
+    addTitle: 'Add Social Media Account',
+    editTitle: 'Edit Social Media Account',
+    subtitle: 'Store brand channel profiles, management handles, and credentials.',
+    defaultCategory: 'Social Media',
+    group: 'Credentials',
+    actionLabel: 'Social Account',
+  },
+  company_account: {
+    label: 'Company Service Account',
+    addTitle: 'Add Company Account',
+    editTitle: 'Edit Company Account',
+    subtitle: 'Store enterprise SaaS tools, organization IDs, and master API keys.',
+    defaultCategory: 'Company Accounts',
+    group: 'Credentials',
+    actionLabel: 'Company Account',
+  },
+  pc_computer: {
+    label: 'PC / Workstation',
+    addTitle: 'Add Computer / Workstation',
+    editTitle: 'Edit Computer / Workstation',
+    subtitle: 'Store workstation hostnames, IP/MAC addresses, and local admin credentials.',
+    defaultCategory: 'Workstations & Hardware',
+    group: 'Infrastructure',
+    actionLabel: 'Workstation',
+  },
+  server: {
+    label: 'Server / VPS',
+    addTitle: 'Add Server / VPS',
+    editTitle: 'Edit Server / VPS',
+    subtitle: 'Store server hostnames, SSH/RDP connection ports, and environment access.',
+    defaultCategory: 'Servers & Infrastructure',
+    group: 'Infrastructure',
+    actionLabel: 'Server',
+  },
+  wifi: {
+    label: 'Wi-Fi Network',
+    addTitle: 'Add Wi-Fi Network',
+    editTitle: 'Edit Wi-Fi Network',
+    subtitle: 'Store wireless SSID, security protocols, pre-shared keys, and router access.',
+    defaultCategory: 'Wi-Fi Networks',
+    group: 'Infrastructure',
+    actionLabel: 'Wi-Fi Network',
+  },
+  domain: {
+    label: 'Domain Record',
+    addTitle: 'Add Domain Record',
+    editTitle: 'Edit Domain Record',
+    subtitle: 'Store domain names, registrar accounts, expiration dates, and DNS nameservers.',
+    defaultCategory: 'Domains & DNS',
+    group: 'Assets',
+    actionLabel: 'Domain Record',
+  },
+  hosting: {
+    label: 'Web Hosting',
+    addTitle: 'Add Web Hosting',
+    editTitle: 'Edit Web Hosting',
+    subtitle: 'Store hosting provider dashboard, cPanel, and FTP access credentials.',
+    defaultCategory: 'Web Hosting',
+    group: 'Assets',
+    actionLabel: 'Web Hosting',
+  },
+  software_license: {
+    label: 'Software License',
+    addTitle: 'Add Software License',
+    editTitle: 'Edit Software License',
+    subtitle: 'Store software license keys, seat allocations, and renewal terms.',
+    defaultCategory: 'Software Licenses',
+    group: 'Assets',
+    actionLabel: 'Software License',
+  },
+  note: {
+    label: 'Secure Note',
+    addTitle: 'Add Secure Note',
+    editTitle: 'Edit Secure Note',
+    subtitle: 'Store confidential runbooks, operational procedures, and encrypted notes.',
+    defaultCategory: 'Secure Notes',
+    group: 'Organization',
+    actionLabel: 'Secure Note',
+  },
+  identity: {
+    label: 'Employee Profile',
+    addTitle: 'Add Employee Profile',
+    editTitle: 'Edit Employee Profile',
+    subtitle: 'Store staff details, employment positions, and Philippine government IDs.',
+    defaultCategory: 'Staff Identities',
+    group: 'Organization',
+    actionLabel: 'Employee Profile',
+  },
+  other: {
+    label: 'Custom Credential',
+    addTitle: 'Add Custom Credential',
+    editTitle: 'Edit Custom Credential',
+    subtitle: 'Store custom encrypted records and company details.',
+    defaultCategory: 'Company Credentials',
+    group: 'Organization',
+    actionLabel: 'Credential',
+  },
+}
+
+const currentMeta = computed(() => {
+  return credentialTypeMeta[form.type] || credentialTypeMeta.password
+})
+
+const dialogTitle = computed(() => {
+  if (props.itemToEdit) {
+    return currentMeta.value.editTitle
+  }
+  return currentMeta.value.addTitle
+})
+
+const dialogSubtitle = computed(() => {
+  return currentMeta.value.subtitle
+})
+
+function selectType(t: VaultItemType) {
+  const previousDefaultCat = currentMeta.value.defaultCategory
+  form.type = t
+  showTypeDropdown.value = false
+  // If category was using previous default category or empty, update to the new type's default
+  if (!form.category || form.category === previousDefaultCat) {
+    form.category = credentialTypeMeta[t]?.defaultCategory || 'Company Credentials'
+  }
+}
 
 const defaultFormData = () => ({
   id: '',
@@ -159,16 +322,26 @@ watch(
   () => props.open,
   (isOpen) => {
     if (isOpen) {
+      showTypeDropdown.value = false
       if (props.itemToEdit) {
         Object.assign(form, defaultFormData(), {
           ...props.itemToEdit,
           tags: [...(props.itemToEdit.tags || [])],
         })
       } else {
-        Object.assign(form, defaultFormData())
-        if (props.initialType) {
-          form.type = props.initialType
-        }
+        const targetType = (props.initialType || 'password') as VaultItemType
+        const defaultCat =
+          props.initialCategory ||
+          credentialTypeMeta[targetType]?.defaultCategory ||
+          'Company Credentials'
+
+        Object.assign(form, defaultFormData(), {
+          type: targetType,
+          category: defaultCat,
+          company: props.initialCompany || '',
+          department: props.initialDepartment || '',
+          tags: props.initialTag ? [props.initialTag] : [],
+        })
       }
       showPassword.value = false
       showNewCategoryBox.value = false
@@ -349,17 +522,57 @@ function close() {
           </div>
           <div>
             <h3 class="text-base font-bold text-foreground">
-              {{ itemToEdit ? 'Edit Credential' : 'New Credential' }}
+              {{ dialogTitle }}
             </h3>
-            <p class="text-xs text-muted-foreground">DBB Company Vault (Encrypted Storage)</p>
+            <p class="text-xs text-muted-foreground">{{ dialogSubtitle }}</p>
           </div>
         </div>
 
         <div class="flex items-center gap-2">
+          <!-- Type Switcher Dropdown (When creating item) -->
+          <div v-if="!itemToEdit" class="relative">
+            <button
+              type="button"
+              @click="showTypeDropdown = !showTypeDropdown"
+              class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl border border-border bg-card hover:bg-muted text-foreground transition-colors shadow-xs"
+              title="Change credential type"
+            >
+              <CredentialTypeIcon :type="form.type" size="xs" />
+              <span>{{ currentMeta.label }}</span>
+              <ChevronDown class="w-3.5 h-3.5 text-muted-foreground" />
+            </button>
+
+            <!-- Dropdown Menu -->
+            <div
+              v-if="showTypeDropdown"
+              class="absolute right-0 mt-2 w-64 p-1.5 bg-popover text-popover-foreground border border-border rounded-2xl shadow-2xl z-50 max-h-80 overflow-y-auto divide-y divide-border/40 animate-in fade-in zoom-in-95 duration-100"
+            >
+              <div class="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                Switch Type
+              </div>
+              <div class="py-1">
+                <button
+                  v-for="t in credentialTypes"
+                  :key="t.type"
+                  type="button"
+                  @click="selectType(t.type)"
+                  class="w-full flex items-center justify-between px-3 py-2 text-xs font-medium rounded-xl hover:bg-muted text-left transition-colors"
+                  :class="{ 'bg-primary/10 text-primary font-bold': form.type === t.type }"
+                >
+                  <div class="flex items-center gap-2">
+                    <CredentialTypeIcon :type="t.type" size="sm" />
+                    <span>{{ t.label }}</span>
+                  </div>
+                  <Check v-if="form.type === t.type" class="w-3.5 h-3.5 text-primary" />
+                </button>
+              </div>
+            </div>
+          </div>
+
           <button
             type="button"
             @click="form.favorite = !form.favorite"
-            class="p-2 rounded-lg border border-border hover:bg-muted"
+            class="p-2 rounded-xl border border-border hover:bg-muted transition-colors"
             :class="{ 'text-amber-500 bg-amber-500/10 border-amber-500/30': form.favorite }"
             title="Toggle Favorite"
           >
@@ -367,33 +580,9 @@ function close() {
           </button>
           <button
             @click="close"
-            class="text-muted-foreground hover:text-foreground p-2 rounded-lg hover:bg-muted"
+            class="text-muted-foreground hover:text-foreground p-2 rounded-xl hover:bg-muted transition-colors"
           >
             <X class="w-5 h-5" />
-          </button>
-        </div>
-      </div>
-
-      <!-- Credential Type Selector (Tabs when creating) -->
-      <div v-if="!itemToEdit" class="px-6 py-3 border-b border-border shrink-0 bg-muted/10">
-        <label class="text-[11px] font-bold uppercase tracking-wider text-muted-foreground mb-1.5 block">
-          Select Credential Type
-        </label>
-        <div class="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto p-1 bg-muted/40 rounded-xl">
-          <button
-            v-for="t in credentialTypes"
-            :key="t.type"
-            type="button"
-            @click="form.type = t.type"
-            class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg"
-            :class="[
-              form.type === t.type
-                ? 'bg-primary text-primary-foreground shadow-sm'
-                : 'bg-card text-muted-foreground hover:text-foreground hover:bg-muted border border-border/50',
-            ]"
-          >
-            <CredentialTypeIcon :type="t.type" size="sm" />
-            <span>{{ t.label }}</span>
           </button>
         </div>
       </div>
@@ -1555,10 +1744,10 @@ function close() {
           </button>
           <button
             type="submit"
-            class="flex items-center gap-2 px-5 py-2.5 text-xs font-bold bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl shadow-md"
+            class="flex items-center gap-2 px-5 py-2.5 text-xs font-bold bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl shadow-md transition-all active:scale-95"
           >
             <Lock class="w-3.5 h-3.5" />
-            <span>{{ itemToEdit ? 'Update Credential' : 'Save Credential' }}</span>
+            <span>{{ itemToEdit ? `Update ${currentMeta.actionLabel}` : `Save ${currentMeta.actionLabel}` }}</span>
           </button>
         </div>
       </form>

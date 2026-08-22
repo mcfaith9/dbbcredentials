@@ -8,6 +8,7 @@ import { formatPhilippinePhone } from '@/lib/dateUtils'
 import EmployeeImportModal from './EmployeeImportModal.vue'
 import EmployeeExportModal from './EmployeeExportModal.vue'
 import ItemDetails from '@/components/vault/ItemDetails.vue'
+import ConfirmDeleteDialog from '@/components/ui/ConfirmDeleteDialog.vue'
 import { Checkbox } from '@/components/ui/checkbox'
 import {
   Select,
@@ -186,11 +187,32 @@ async function copyValue(val: string | undefined, label: string, key: string) {
   }
 }
 
-function handleBatchDelete() {
+const employeeToDelete = ref<VaultItem | null>(null)
+const showBatchDeleteConfirm = ref(false)
+
+function promptDeleteEmployee(emp: VaultItem) {
+  employeeToDelete.value = emp
+}
+
+function confirmDeleteEmployee() {
+  if (!employeeToDelete.value) return
+  const name = employeeToDelete.value.full_name || employeeToDelete.value.name
+  moveToTrash(employeeToDelete.value.id)
+  employeeToDelete.value = null
+  success('Moved to Trash', `"${name}" moved to trash.`)
+}
+
+function promptBatchDelete() {
+  if (selectedEmployeeIds.value.length === 0) return
+  showBatchDeleteConfirm.value = true
+}
+
+function confirmBatchDelete() {
   if (selectedEmployeeIds.value.length === 0) return
   const count = selectedEmployeeIds.value.length
   selectedEmployeeIds.value.forEach((id) => moveToTrash(id))
   selectedEmployeeIds.value = []
+  showBatchDeleteConfirm.value = false
   success('Moved to Trash', `Moved ${count} employee records to trash.`)
 }
 
@@ -390,7 +412,7 @@ function onImportSuccess(updated: VaultItem[]) {
             <Download class="w-3.5 h-3.5" />
           </button>
           <button
-            @click="handleBatchDelete"
+            @click="promptBatchDelete"
             class="p-1 hover:bg-rose-500/20 rounded text-rose-600"
             title="Move selected to trash"
           >
@@ -646,7 +668,7 @@ function onImportSuccess(updated: VaultItem[]) {
                   </button>
 
                   <button
-                    @click="moveToTrash(emp.id)"
+                    @click="promptDeleteEmployee(emp)"
                     class="p-1.5 text-muted-foreground hover:text-rose-600 rounded hover:bg-rose-500/10"
                     title="Move to Trash"
                   >
@@ -761,7 +783,7 @@ function onImportSuccess(updated: VaultItem[]) {
                     <Edit class="w-3.5 h-3.5" />
                   </button>
                   <button
-                    @click="moveToTrash(emp.id)"
+                    @click="promptDeleteEmployee(emp)"
                     class="p-1 text-muted-foreground hover:text-rose-600 rounded hover:bg-rose-500/10"
                     title="Move to trash"
                   >
@@ -839,6 +861,30 @@ function onImportSuccess(updated: VaultItem[]) {
       :allItems="employeeList"
       :filteredItems="filteredEmployees"
       :selectedIds="selectedEmployeeIds"
+    />
+
+    <!-- Single Employee Delete Confirmation Dialog -->
+    <ConfirmDeleteDialog
+      :open="!!employeeToDelete"
+      title="Delete Employee Record?"
+      :itemName="employeeToDelete ? (employeeToDelete.full_name || employeeToDelete.name) : ''"
+      description="Are you sure you want to move this employee record to trash? You can restore it anytime from Trash."
+      confirmText="Move to Trash"
+      @update:open="(val) => { if (!val) employeeToDelete = null }"
+      @confirm="confirmDeleteEmployee"
+      @cancel="employeeToDelete = null"
+    />
+
+    <!-- Batch Delete Confirmation Dialog -->
+    <ConfirmDeleteDialog
+      :open="showBatchDeleteConfirm"
+      title="Delete Selected Employees?"
+      :itemCount="selectedEmployeeIds.length"
+      :description="`Are you sure you want to move ${selectedEmployeeIds.length} employee record${selectedEmployeeIds.length > 1 ? 's' : ''} to trash?`"
+      confirmText="Move to Trash"
+      @update:open="(val) => showBatchDeleteConfirm = val"
+      @confirm="confirmBatchDelete"
+      @cancel="showBatchDeleteConfirm = false"
     />
   </div>
 </template>

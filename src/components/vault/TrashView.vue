@@ -3,10 +3,10 @@ import { ref } from 'vue'
 import { useVault } from '@/composables/useVault'
 import { useToast } from '@/composables/useToast'
 import type { VaultItem } from '@/types'
+import ConfirmDeleteDialog from '@/components/ui/ConfirmDeleteDialog.vue'
 import {
   Trash2,
   RotateCcw,
-  AlertTriangle,
   KeyRound,
   FileText,
   User,
@@ -16,17 +16,23 @@ const { trashItems, restoreFromTrash, permanentlyDelete, emptyTrash } = useVault
 const { success, warning } = useToast()
 
 const showConfirmEmpty = ref(false)
+const itemToPermanentlyDelete = ref<VaultItem | null>(null)
 
 function handleRestore(item: VaultItem) {
   restoreFromTrash(item.id)
   success('Item Restored', `"${item.name}" restored to your vault.`)
 }
 
-function handlePermanentDelete(item: VaultItem) {
-  if (confirm(`Permanently delete "${item.name}"? This action cannot be undone.`)) {
-    permanentlyDelete(item.id)
-    warning('Item Deleted', `"${item.name}" was permanently removed.`)
-  }
+function promptPermanentDelete(item: VaultItem) {
+  itemToPermanentlyDelete.value = item
+}
+
+function confirmPermanentDelete() {
+  if (!itemToPermanentlyDelete.value) return
+  const item = itemToPermanentlyDelete.value
+  permanentlyDelete(item.id)
+  itemToPermanentlyDelete.value = null
+  warning('Item Deleted', `"${item.name}" was permanently removed.`)
 }
 
 function handleEmptyTrash() {
@@ -114,7 +120,7 @@ function handleEmptyTrash() {
           </button>
 
           <button
-            @click="handlePermanentDelete(item)"
+            @click="promptPermanentDelete(item)"
             class="p-2 rounded-lg border border-border hover:bg-rose-500/10 hover:border-rose-500/30 text-muted-foreground hover:text-rose-600"
             title="Permanently Delete"
           >
@@ -125,36 +131,25 @@ function handleEmptyTrash() {
     </div>
 
     <!-- Confirmation Modal for Empty Trash -->
-    <div
-      v-if="showConfirmEmpty"
-      class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in"
-    >
-      <div class="bg-card border border-border rounded-2xl p-6 max-w-sm w-full space-y-4 shadow-2xl animate-in zoom-in-95">
-        <div class="flex items-center gap-3 text-rose-600 dark:text-rose-400">
-          <div class="p-2 rounded-xl bg-rose-500/10">
-            <AlertTriangle class="w-6 h-6" />
-          </div>
-          <h3 class="text-base font-bold text-foreground">Empty Trash?</h3>
-        </div>
-        <p class="text-xs text-muted-foreground leading-relaxed">
-          This will permanently delete all {{ trashItems.length }} items in the trash. This action is irreversible.
-        </p>
+    <ConfirmDeleteDialog
+      v-model:open="showConfirmEmpty"
+      title="Empty Trash?"
+      :description="`This will permanently delete all ${trashItems.length} items in the trash. This action is irreversible.`"
+      confirmText="Yes, Empty All"
+      @confirm="handleEmptyTrash"
+      @cancel="showConfirmEmpty = false"
+    />
 
-        <div class="flex items-center justify-end gap-2.5 pt-2">
-          <button
-            @click="showConfirmEmpty = false"
-            class="px-4 py-2 text-xs font-semibold rounded-xl text-muted-foreground hover:bg-muted"
-          >
-            Cancel
-          </button>
-          <button
-            @click="handleEmptyTrash"
-            class="px-4 py-2 text-xs font-semibold rounded-xl bg-rose-600 hover:bg-rose-700 text-white shadow-sm"
-          >
-            Yes, Empty All
-          </button>
-        </div>
-      </div>
-    </div>
+    <!-- Confirmation Modal for Single Item Permanent Delete -->
+    <ConfirmDeleteDialog
+      :open="!!itemToPermanentlyDelete"
+      title="Permanently Delete Item?"
+      :itemName="itemToPermanentlyDelete ? itemToPermanentlyDelete.name : ''"
+      description="This will permanently remove this item from your vault. This action is irreversible."
+      confirmText="Delete Permanently"
+      @update:open="(val) => { if (!val) itemToPermanentlyDelete = null }"
+      @confirm="confirmPermanentDelete"
+      @cancel="itemToPermanentlyDelete = null"
+    />
   </div>
 </template>

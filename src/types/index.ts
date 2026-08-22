@@ -120,6 +120,9 @@ export interface VaultItem {
   full_name?: string
   position?: string
   department?: string
+  competency?: string
+  start_date?: string
+  end_date?: string
   contract?: string
   status?: string
   sss_no?: string
@@ -138,6 +141,9 @@ export interface VaultItem {
   phone?: string
   work_email?: string
   emergency_contact?: string
+  emergency_contact_address?: string
+  emergency_contact_no?: string
+  emergency_contact_phone?: string
 }
 
 export * from './employee'

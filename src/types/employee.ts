@@ -4,6 +4,9 @@ export interface EmployeeRecord {
   name: string
   department: string
   position: string
+  competency?: string
+  start_date?: string
+  end_date?: string
   contract: string
   status: string
   sss_no: string
@@ -15,7 +18,10 @@ export interface EmployeeRecord {
   dmbb_id: string
   contact_no: string
   emergency_contact: string
+  emergency_contact_address?: string
+  emergency_contact_no?: string
   work_email?: string
+  tenure?: string
 }
 
 export type DuplicateConfidence = 'exact' | 'possible' | 'none'

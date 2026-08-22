@@ -5,6 +5,7 @@ import { useVault } from '@/composables/useVault'
 import { useToast } from '@/composables/useToast'
 import { useElectron } from '@/composables/useElectron'
 import { encryptVault, decryptVault } from '@/services/crypto'
+import ConfirmDeleteDialog from '@/components/ui/ConfirmDeleteDialog.vue'
 import {
   Shield,
   Moon,
@@ -263,11 +264,12 @@ async function handleFileRestore(e: Event) {
   }
 }
 
-function handleResetVault() {
-  if (confirm('Are you sure you want to reset your vault? This will revert items to initial default demonstration records.')) {
-    resetVault()
-    warning('Vault Reset', 'Vault items have been reset to default records.')
-  }
+const showResetConfirm = ref(false)
+
+function confirmResetVault() {
+  resetVault()
+  showResetConfirm.value = false
+  warning('Vault Reset', 'Vault items have been reset to default records.')
 }
 </script>
 
@@ -677,7 +679,7 @@ function handleResetVault() {
           </div>
 
           <button
-            @click="handleResetVault"
+            @click="showResetConfirm = true"
             class="px-3 py-1.5 border border-rose-500/30 text-rose-600 dark:text-rose-400 hover:bg-rose-500/10 rounded-lg text-xs font-semibold"
           >
             Reset Database
@@ -685,6 +687,16 @@ function handleResetVault() {
         </div>
       </div>
     </div>
+
+    <!-- Confirm Reset Vault Dialog -->
+    <ConfirmDeleteDialog
+      v-model:open="showResetConfirm"
+      title="Reset Vault Data?"
+      description="Are you sure you want to reset your vault? This will erase custom records and revert to initial default demonstration records."
+      confirmText="Reset Database"
+      @confirm="confirmResetVault"
+      @cancel="showResetConfirm = false"
+    />
 
     <!-- ================= SECTION 4: ELECTRON DESKTOP ARCHITECTURE & ABOUT ================= -->
     <div class="space-y-4">

@@ -16,6 +16,7 @@ const { isAuthenticated, lock } = useAuth()
 const {
   isElectron,
   platform,
+  platformInfo,
   isMaximized,
   minimizeWindow,
   toggleMaximizeWindow,
@@ -66,9 +67,8 @@ const isMac = computed(() => platform.value === 'darwin')
         <div class="w-5 h-5 rounded-md bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
           <ShieldCheck class="w-3.5 h-3.5" />
         </div>
-        <span class="font-semibold tracking-tight text-zinc-200">DBB Company Vault</span>
         <span class="text-[10px] px-1.5 py-0.5 rounded bg-zinc-800/80 text-zinc-400 border border-zinc-700/50 font-mono">
-          Enterprise v1.0
+          APP Version {{platformInfo.appVersion}}
         </span>
       </div>
     </div>

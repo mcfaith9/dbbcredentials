@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 import { useAuth } from '@/composables/useAuth'
 import { useVault } from '@/composables/useVault'
-import type { VaultNavFilter } from '@/types'
+import type { VaultNavFilter, VaultItemType } from '@/types'
 import {
   LayoutDashboard,
   KeyRound,
@@ -29,7 +29,7 @@ import {
 } from '@lucide/vue'
 
 const emit = defineEmits<{
-  (e: 'add-item'): void
+  (e: 'add-item', type?: VaultItemType): void
   (e: 'open-generator'): void
 }>()
 
@@ -46,6 +46,65 @@ const {
 
 const currentUsername = computed(() => user.value?.username || 'admin')
 
+const contextType = computed<VaultItemType>(() => {
+  switch (selectedFilter.value) {
+    case 'wifi':
+      return 'wifi'
+    case 'servers':
+      return 'server'
+    case 'pc_computers':
+      return 'pc_computer'
+    case 'domains':
+      return 'domain'
+    case 'hosting':
+      return 'hosting'
+    case 'software_licenses':
+      return 'software_license'
+    case 'notes':
+      return 'note'
+    case 'identities':
+      return 'identity'
+    case 'email_accounts':
+      return 'email_account'
+    case 'social_accounts':
+      return 'social_account'
+    case 'company_accounts':
+      return 'company_account'
+    case 'passwords':
+    default:
+      return 'password'
+  }
+})
+
+const addItemButtonLabel = computed(() => {
+  switch (selectedFilter.value) {
+    case 'wifi':
+      return 'New Wi-Fi (Ctrl+N)'
+    case 'servers':
+      return 'New Server (Ctrl+N)'
+    case 'identities':
+      return 'New Employee (Ctrl+N)'
+    case 'email_accounts':
+      return 'New Email (Ctrl+N)'
+    case 'domains':
+      return 'New Domain (Ctrl+N)'
+    case 'hosting':
+      return 'New Hosting (Ctrl+N)'
+    case 'software_licenses':
+      return 'New License (Ctrl+N)'
+    case 'notes':
+      return 'New Note (Ctrl+N)'
+    case 'pc_computers':
+      return 'New Workstation (Ctrl+N)'
+    case 'social_accounts':
+      return 'New Social (Ctrl+N)'
+    case 'company_accounts':
+      return 'New Company Acct (Ctrl+N)'
+    default:
+      return 'New Credential (Ctrl+N)'
+  }
+})
+
 function handleNavClick(filter: VaultNavFilter) {
   setFilter(filter, null, null)
 }
@@ -57,7 +116,7 @@ function handleNavClick(filter: VaultNavFilter) {
     <div class="p-4 border-b border-sidebar-border flex items-center justify-between">
       <div class="flex items-center gap-2.5 min-w-0">
         <div>
-          <img src="@/assets/img/dbblogo.png" class="w-8 rounded-full" />
+          <img src="/dbblogo.png" class="w-8 rounded-full" alt="DBB Logo" />
         </div>
         <div class="min-w-0">
           <h1 class="text-sm font-bold tracking-tight text-sidebar-foreground truncate">DBB Vault</h1>
@@ -72,11 +131,11 @@ function handleNavClick(filter: VaultNavFilter) {
     <!-- Quick + Add Item Button -->
     <div class="p-3 border-b border-sidebar-border">
       <button
-        @click="emit('add-item')"
-        class="w-full flex items-center justify-center gap-2 py-2 px-3 text-xs font-bold rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm"
+        @click="emit('add-item', contextType)"
+        class="w-full flex items-center justify-center gap-2 py-2 px-3 text-xs font-bold rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm transition-all active:scale-[0.98]"
       >
         <Plus class="w-4 h-4" />
-        <span>New Credential (Ctrl+N)</span>
+        <span>{{ addItemButtonLabel }}</span>
       </button>
     </div>
 

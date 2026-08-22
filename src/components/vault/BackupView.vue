@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import { useVault } from '@/composables/useVault'
 import { useToast } from '@/composables/useToast'
 import type { ImportConflictStrategy } from '@/types'
+import ConfirmDeleteDialog from '@/components/ui/ConfirmDeleteDialog.vue'
 import {
   Download,
   Upload,
@@ -29,6 +30,7 @@ const exportPassphrase = ref('')
 const confirmExportPassphrase = ref('')
 const isExporting = ref(false)
 const exportSuccess = ref(false)
+const showPlaintextConfirm = ref(false)
 
 // Import state
 const importFileInput = ref<HTMLInputElement | null>(null)
@@ -80,16 +82,9 @@ async function handleExport() {
   }
 }
 
-// Handle Plaintext JSON Export with extra warning confirmation
-function handlePlaintextExport() {
-  if (
-    !confirm(
-      'Security Warning: Exporting unencrypted plaintext contains all company passwords and credentials. Never commit this file to Git or public storage. Proceed?'
-    )
-  ) {
-    return
-  }
-
+// Handle Plaintext JSON Export
+function executePlaintextExport() {
+  showPlaintextConfirm.value = false
   try {
     const rawData = exportVault()
     const jsonStr = JSON.stringify(rawData, null, 2)
@@ -291,7 +286,7 @@ function resetImportState() {
           <span>Unencrypted export (Advanced):</span>
           <button
             type="button"
-            @click="handlePlaintextExport"
+            @click="showPlaintextConfirm = true"
             class="text-rose-500 hover:text-rose-600 font-semibold hover:underline"
           >
             Export Plaintext JSON
@@ -479,5 +474,15 @@ function resetImportState() {
         </div>
       </div>
     </div>
+
+    <!-- Confirm Unencrypted Plaintext Export Dialog -->
+    <ConfirmDeleteDialog
+      v-model:open="showPlaintextConfirm"
+      title="Security Warning: Export Plaintext?"
+      description="Exporting unencrypted plaintext contains all company passwords, secret keys, and credentials. Never commit this file to Git or public cloud storage. Proceed?"
+      confirmText="Download Plaintext"
+      @confirm="executePlaintextExport"
+      @cancel="showPlaintextConfirm = false"
+    />
   </div>
 </template>

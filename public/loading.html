@@ -1,23 +1,26 @@
 <!doctype html>
-<html>
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <title>DBB Mail</title>
-
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>DBB Company Vault</title>
     <style>
       * {
         box-sizing: border-box;
+        margin: 0;
+        padding: 0;
       }
 
       html,
       body {
-        margin: 0;
         width: 100%;
         height: 100%;
         overflow: hidden;
-        font-family: Arial, sans-serif;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
         background: #09090b;
         color: #fafafa;
+        user-select: none;
+        -webkit-app-region: drag;
       }
 
       body {
@@ -26,51 +29,138 @@
         justify-content: center;
       }
 
-      .loading {
+      .splash-card {
         display: flex;
         flex-direction: column;
         align-items: center;
-        gap: 12px;
+        justify-content: center;
+        text-align: center;
+        padding: 32px 24px;
+        width: 100%;
+        height: 100%;
       }
 
-      .spinner {
-        width: 28px;
-        height: 28px;
-        border: 3px solid #27272a;
-        border-top-color: #fafafa;
+      .logo-container {
+        position: relative;
+        margin-bottom: 20px;
+      }
+
+      .logo-img {
+        width: 68px;
+        height: 68px;
         border-radius: 50%;
-        animation: spin 0.8s linear infinite;
+        object-fit: cover;
+        box-shadow: 0 0 24px rgba(59, 130, 246, 0.25);
+        border: 2px solid rgba(255, 255, 255, 0.1);
+        display: block;
+      }
+
+      .logo-fallback {
+        width: 68px;
+        height: 68px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #2563eb, #1d4ed8);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        font-weight: 800;
+        font-size: 24px;
+        color: #ffffff;
+        letter-spacing: -0.5px;
       }
 
       .title {
-        font-size: 14px;
-        font-weight: 600;
+        font-size: 16px;
+        font-weight: 700;
+        letter-spacing: -0.2px;
+        color: #f4f4f5;
+        margin-bottom: 4px;
       }
 
-      .subtitle {
-        font-size: 12px;
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 11px;
+        font-weight: 500;
         color: #a1a1aa;
+        margin-bottom: 22px;
       }
 
-      @keyframes spin {
-        to {
-          transform: rotate(360deg);
+      .badge-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: #10b981;
+        box-shadow: 0 0 8px #10b981;
+      }
+
+      .progress-bar-container {
+        width: 180px;
+        height: 3px;
+        background: #27272a;
+        border-radius: 999px;
+        overflow: hidden;
+        position: relative;
+        margin-bottom: 12px;
+      }
+
+      .progress-bar-indicator {
+        position: absolute;
+        top: 0;
+        left: 0;
+        bottom: 0;
+        width: 45%;
+        background: linear-gradient(90deg, #3b82f6, #60a5fa);
+        border-radius: 999px;
+        animation: progress-slide 1.4s ease-in-out infinite;
+      }
+
+      .status-text {
+        font-size: 11px;
+        color: #71717a;
+        letter-spacing: 0.2px;
+      }
+
+      @keyframes progress-slide {
+        0% {
+          left: -45%;
+          width: 30%;
+        }
+        50% {
+          width: 55%;
+        }
+        100% {
+          left: 100%;
+          width: 30%;
         }
       }
     </style>
   </head>
 
   <body>
-    <div class="loading">
-      <div class="spinner"></div>
-
-      <div class="title">
-        DBB APP
+    <div class="splash-card">
+      <div class="logo-container">
+        <img
+          src="dbblogo.png"
+          class="logo-img"
+          alt="DBB Logo"
+          onerror="this.style.display='none'; document.getElementById('logo-fallback').style.display='flex';"
+        />
+        <div id="logo-fallback" class="logo-fallback">DBB</div>
       </div>
 
-      <div class="subtitle">
-        Preparing your workspace...
+      <h1 class="title">DBB Company Vault</h1>
+      <div class="badge">
+        <span class="badge-dot"></span>
+        <span>Encrypted Workspace</span>
       </div>
+
+      <div class="progress-bar-container">
+        <div class="progress-bar-indicator"></div>
+      </div>
+
+      <p class="status-text">Loading your workspace...</p>
     </div>
   </body>
 </html>

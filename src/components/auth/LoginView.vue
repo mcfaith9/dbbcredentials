@@ -65,7 +65,7 @@ async function handleLogin() {
           <img src="@/assets/img/dbblogo.png" class="w-20 rounded-full" />
         </div>
         <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight text-zinc-100">
-          DBB Company Vault
+          DBB / DMBB Vault
         </h1>
         <p class="text-xs sm:text-sm text-zinc-400">
           Sign in to enterprise credential vault
@@ -93,7 +93,7 @@ async function handleLogin() {
                 type="text"
                 autocomplete="username"
                 required
-                placeholder="dbb@admin"
+                placeholder="username"
                 class="w-full px-3.5 py-2.5 text-sm rounded-xl border border-zinc-800 bg-zinc-950/70 text-zinc-100 placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 transition"
               />
             </div>

@@ -16,6 +16,29 @@ export const RENDERER_DIST = path.join(process.env.APP_ROOT, 'dist')
 process.env.VITE_PUBLIC = VITE_DEV_SERVER_URL ? path.join(process.env.APP_ROOT, 'public') : RENDERER_DIST
 
 let win: BrowserWindow | null = null
+let splash: BrowserWindow | null = null
+
+const SPLASH_MIN_DURATION = 1500
+let splashShownAt = 0
+
+// Single-instance protection
+const gotTheLock = app.requestSingleInstanceLock()
+
+if (!gotTheLock) {
+  // A second instance was launched, terminate it immediately
+  app.quit()
+} else {
+  app.on('second-instance', () => {
+    // If user launches another instance, restore & focus existing main window
+    if (win && !win.isDestroyed()) {
+      if (win.isMinimized()) win.restore()
+      win.focus()
+    } else if (splash && !splash.isDestroyed()) {
+      if (splash.isMinimized()) splash.restore()
+      splash.focus()
+    }
+  })
+}
 
 // Updater state tracker
 interface UpdateState {
@@ -107,6 +130,60 @@ function setupAutoUpdater() {
   })
 }
 
+function createSplashWindow() {
+  splash = new BrowserWindow({
+    width: 380,
+    height: 320,
+    frame: false,
+    resizable: false,
+    center: true,
+    show: false,
+    alwaysOnTop: true,
+    backgroundColor: '#09090b',
+    icon: path.join(process.env.VITE_PUBLIC, 'icon1.ico'),
+    webPreferences: {
+      nodeIntegration: false,
+      contextIsolation: true,
+      sandbox: false,
+    },
+  })
+
+  const loadingPath = path.join(process.env.VITE_PUBLIC, 'loading.html')
+
+  splash.loadFile(loadingPath).catch(() => {
+    // Ignore if file load failed
+  })
+
+  splash.once('ready-to-show', () => {
+    if (splash && !splash.isDestroyed()) {
+      splashShownAt = Date.now()
+      splash.show()
+    }
+  })
+
+  splash.on('closed', () => {
+    splash = null
+  })
+}
+
+async function closeSplashWhenReady() {
+  if (!splash || splash.isDestroyed()) {
+    return
+  }
+
+  const elapsed = Date.now() - splashShownAt
+  const remaining = Math.max(0, SPLASH_MIN_DURATION - elapsed)
+
+  if (remaining > 0) {
+    await new Promise(resolve => setTimeout(resolve, remaining))
+  }
+
+  if (splash && !splash.isDestroyed()) {
+    splash.destroy()
+    splash = null
+  }
+}
+
 function createWindow() {
   win = new BrowserWindow({
     title: 'DBB Credentials Vault',
@@ -115,6 +192,7 @@ function createWindow() {
     height: 720,
     minWidth: 1000,
     minHeight: 600,
+    show: false, // Keep hidden until fully loaded, splash screen displays during this time
     backgroundColor: '#09090b',
     // Custom framing for desktop titlebar
     titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'hidden',
@@ -129,6 +207,17 @@ function createWindow() {
       contextIsolation: true,
       sandbox: false,
     },
+  })
+
+  // Smooth transition: When main window is ready to display, show it and close splash
+  win.once('ready-to-show', async () => {
+    // Wait for the minimum splash duration first
+    await closeSplashWhenReady()
+
+    // Only show the main window after the splash is finished
+    if (win && !win.isDestroyed()) {
+      win.show()
+    }
   })
 
   // Window state notification to renderer
@@ -377,5 +466,6 @@ app.on('activate', () => {
 
 app.whenReady().then(() => {
   setupAutoUpdater()
+  createSplashWindow()
   createWindow()
 })

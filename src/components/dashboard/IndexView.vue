@@ -92,10 +92,10 @@ function handleGlobalKeydown(e: KeyboardEvent) {
     searchInputRef.value?.focus()
   }
 
-  // Ctrl + N -> New Item
+  // Ctrl + N -> New Item (Context-aware)
   if (isCtrlOrCmd && e.key.toLowerCase() === 'n') {
     e.preventDefault()
-    openAddItem('password')
+    openAddItem(currentContextType.value)
   }
 
   // Ctrl + L -> Lock Vault
@@ -112,9 +112,39 @@ function handleGlobalKeydown(e: KeyboardEvent) {
   }
 }
 
-function openAddItem(type: VaultItemType = 'password') {
+const currentContextType = computed<VaultItemType>(() => {
+  switch (selectedFilter.value) {
+    case 'wifi':
+      return 'wifi'
+    case 'servers':
+      return 'server'
+    case 'pc_computers':
+      return 'pc_computer'
+    case 'domains':
+      return 'domain'
+    case 'hosting':
+      return 'hosting'
+    case 'software_licenses':
+      return 'software_license'
+    case 'notes':
+      return 'note'
+    case 'identities':
+      return 'identity'
+    case 'email_accounts':
+      return 'email_account'
+    case 'social_accounts':
+      return 'social_account'
+    case 'company_accounts':
+      return 'company_account'
+    case 'passwords':
+    default:
+      return 'password'
+  }
+})
+
+function openAddItem(type?: VaultItemType) {
   itemToEdit.value = null
-  initialItemType.value = type
+  initialItemType.value = type || currentContextType.value
   showItemDialog.value = true
 }
 
@@ -199,7 +229,7 @@ const currentViewTitle = computed(() => {
   <div class="flex h-full w-full overflow-hidden bg-background text-foreground font-sans">
     <!-- Left Navigation Sidebar -->
     <AppSidebar
-      @add-item="openAddItem('password')"
+      @add-item="(type) => openAddItem(type)"
       @open-generator="showGeneratorModal = true"
     />
 
@@ -440,10 +470,10 @@ const currentViewTitle = computed(() => {
                 </div>
                 <p>No matching company records found.</p>
                 <button
-                  @click="openAddItem('password')"
+                  @click="openAddItem(currentContextType)"
                   class="text-xs text-primary font-bold hover:underline"
                 >
-                  + Add a new credential
+                  + Add a new record
                 </button>
               </div>
 
@@ -540,6 +570,10 @@ const currentViewTitle = computed(() => {
       v-model:open="showItemDialog"
       :itemToEdit="itemToEdit"
       :initialType="initialItemType"
+      :initialCategory="selectedCategory || undefined"
+      :initialCompany="selectedCompany || undefined"
+      :initialDepartment="selectedDepartment || undefined"
+      :initialTag="selectedTag || undefined"
       @saved="(saved) => selectItem(saved.id)"
     />
 
