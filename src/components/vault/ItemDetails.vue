@@ -46,7 +46,6 @@ const emit = defineEmits<{
 const { toggleFavorite, moveToTrash } = useVault()
 const { copyToClipboard } = useClipboard()
 const { success } = useToast()
-const { printEmployeeDossier, printGenericVaultItem } = usePrint()
 
 const showPassword = ref(false)
 const copiedField = ref<string | null>(null)
