@@ -6,7 +6,6 @@ import { useClipboard } from '@/composables/useClipboard'
 import { useToast } from '@/composables/useToast'
 import { calculatePasswordStrength } from '@/services/crypto'
 import { formatDate, formatDateTime, formatPhilippinePhone, getEmployeeTenureDisplay } from '@/lib/dateUtils'
-import { usePrint } from '@/composables/usePrint'
 import CredentialTypeIcon from './CredentialTypeIcon.vue'
 import ConfirmDeleteDialog from '@/components/ui/ConfirmDeleteDialog.vue'
 import {
