@@ -56,6 +56,7 @@ export interface VaultItem {
   // Social Account specific
   platform?: string
   profile_url?: string
+  url?: string
 
   // Company Account specific
   role?: string

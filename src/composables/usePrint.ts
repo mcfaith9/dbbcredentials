@@ -256,7 +256,7 @@ export function usePrint() {
       .join('')
 
     const tableRows = data
-      .map((row, idx) => {
+      .map((row) => {
         const cells = columns
           .map((col) => {
             const align = col.align || 'left'

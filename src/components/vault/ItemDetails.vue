@@ -31,11 +31,7 @@ import {
   AlertTriangle,
   Phone,
   Award,
-  Briefcase,
-  User,
   Shield,
-  MapPin,
-  Printer,
 } from '@lucide/vue'
 
 const props = defineProps<{
@@ -55,15 +51,6 @@ const { printEmployeeDossier, printGenericVaultItem } = usePrint()
 const showPassword = ref(false)
 const copiedField = ref<string | null>(null)
 const showDeleteConfirm = ref(false)
-
-function handlePrint() {
-  if (!props.item) return
-  if (props.item.type === 'identity') {
-    printEmployeeDossier(props.item)
-  } else {
-    printGenericVaultItem(props.item)
-  }
-}
 
 watch(
   () => props.item?.id,

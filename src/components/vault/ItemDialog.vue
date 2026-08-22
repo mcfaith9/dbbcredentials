@@ -8,7 +8,7 @@ import PasswordGeneratorModal from './PasswordGeneratorModal.vue'
 import CredentialTypeIcon from './CredentialTypeIcon.vue'
 import PhoneInput from '@/components/common/PhoneInput.vue'
 import AddressInput from '@/components/common/AddressInput.vue'
-import { calculateTenure, getEmployeeTenureDisplay } from '@/lib/dateUtils'
+import { calculateTenure } from '@/lib/dateUtils'
 import {
   Building2,
   Eye,
@@ -26,7 +26,6 @@ import {
   User,
   Shield,
   Phone,
-  MapPin,
   Award,
 } from '@lucide/vue'
 

@@ -34,7 +34,7 @@ export const EMPLOYEE_FIELDS = [
 ] as const
 
 // Header aliases dictionary for fuzzy column mapping
-const HEADER_MAPPINGS: Record<keyof EmployeeRecord, string[]> = {
+const HEADER_MAPPINGS: Partial<Record<keyof EmployeeRecord, string[]>> = {
   name: [
     "employee's name",
     'employees name',
