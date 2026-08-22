@@ -4,7 +4,8 @@ import type { VaultItem } from '@/types'
 import { useVault } from '@/composables/useVault'
 import { useToast } from '@/composables/useToast'
 import { useClipboard } from '@/composables/useClipboard'
-import { formatPhilippinePhone } from '@/lib/dateUtils'
+import { usePrint } from '@/composables/usePrint'
+import { formatPhilippinePhone, formatDate, getEmployeeTenureDisplay } from '@/lib/dateUtils'
 import EmployeeImportModal from './EmployeeImportModal.vue'
 import EmployeeExportModal from './EmployeeExportModal.vue'
 import ItemDetails from '@/components/vault/ItemDetails.vue'
@@ -37,6 +38,10 @@ import {
   Columns,
   X,
   UserRoundCheck,
+  Printer,
+  Award,
+  Clock,
+  Calendar,
 } from '@lucide/vue'
 
 const emit = defineEmits<{
@@ -56,6 +61,7 @@ const {
 
 const { copyToClipboard } = useClipboard()
 const { success } = useToast()
+const { printTable, printEmployeeDossier } = usePrint()
 
 // View layout mode: 'table' | 'cards' | 'split'
 const viewMode = ref<'table' | 'cards' | 'split'>('table')
@@ -120,6 +126,7 @@ const filteredEmployees = computed(() => {
         emp.employee_id,
         emp.department,
         emp.position,
+        emp.competency,
         emp.contact_no,
         emp.work_phone,
         emp.phone,
@@ -132,6 +139,8 @@ const filteredEmployees = computed(() => {
         emp.work_email,
         emp.address,
         emp.office_address,
+        emp.emergency_contact,
+        emp.emergency_contact_no,
       ]
       return searchFields.some((f) => f && f.toLowerCase().includes(q))
     }
@@ -220,6 +229,42 @@ function onImportSuccess(updated: VaultItem[]) {
   bulkUpsertItems(updated)
   showImportModal.value = false
 }
+
+// Print Handler
+function handlePrintTable() {
+  const dataToPrint = selectedEmployeeIds.value.length > 0
+    ? employeeList.value.filter((e) => selectedEmployeeIds.value.includes(e.id))
+    : filteredEmployees.value
+
+  const subtitle = selectedEmployeeIds.value.length > 0
+    ? `Custom Selection: ${dataToPrint.length} Employees`
+    : `Directory Roster: ${dataToPrint.length} Records ${selectedDepartment.value !== 'all' ? `• Dept: ${selectedDepartment.value}` : ''} ${selectedStatus.value !== 'all' ? `• Status: ${selectedStatus.value}` : ''}`
+
+  printTable<VaultItem>({
+    title: 'Employee Directory & Master Staff Roster',
+    subtitle,
+    data: dataToPrint,
+    orientation: 'landscape',
+    columns: [
+      { header: "Employee's Name", format: (r) => r.full_name || r.name },
+      { header: 'ID No.', format: (r) => r.dmbb_id || r.employee_id || '—' },
+      { header: 'Department', format: (r) => r.department || '—' },
+      { header: 'Position', format: (r) => r.position || '—' },
+      { header: 'Competency', format: (r) => r.competency || '—' },
+      { header: 'Status / Contract', format: (r) => `${r.status || 'Active'} (${r.contract || 'Regular'})` },
+      { header: 'Start Date', format: (r) => r.start_date ? formatDate(r.start_date) : '—' },
+      { header: 'Calculated Tenure', format: (r) => getEmployeeTenureDisplay(r.start_date, r.end_date, r.status) },
+      { header: 'Contact No.', format: (r) => r.contact_no ? formatPhilippinePhone(r.contact_no) : '—' },
+      { header: 'SSS No.', format: (r) => r.sss_no || '—' },
+      { header: 'TIN No.', format: (r) => r.tin_no || '—' },
+      { header: 'HDMF No.', format: (r) => r.hdmf_no || r.pagibig_no || '—' },
+    ],
+  })
+}
+
+function handlePrintDossier(emp: VaultItem) {
+  printEmployeeDossier(emp)
+}
 </script>
 
 <template>
@@ -247,6 +292,16 @@ function onImportSuccess(updated: VaultItem[]) {
 
         <!-- Main Actions -->
         <div class="flex items-center gap-2 flex-wrap">
+          <!-- Print Roster -->
+          <button
+            @click="handlePrintTable"
+            class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl border border-border bg-background hover:bg-muted text-foreground"
+            title="Print Employee Directory / Table Roster"
+          >
+            <Printer class="w-3.5 h-3.5 text-blue-600" />
+            <span>Print</span>
+          </button>
+
           <!-- Export -->
           <button
             @click="showExportModal = true"
@@ -405,6 +460,13 @@ function onImportSuccess(updated: VaultItem[]) {
         <div v-if="selectedEmployeeIds.length > 0" class="flex items-center gap-1.5 px-2 py-1 rounded-xl bg-primary/10 border border-primary/20 text-xs">
           <span class="font-bold text-primary text-[11px]">{{ selectedEmployeeIds.length }} Selected</span>
           <button
+            @click="handlePrintTable"
+            class="p-1 hover:bg-primary/20 rounded text-primary"
+            title="Print selected employees"
+          >
+            <Printer class="w-3.5 h-3.5" />
+          </button>
+          <button
             @click="showExportModal = true"
             class="p-1 hover:bg-primary/20 rounded text-primary"
             title="Export selected employees"
@@ -494,7 +556,7 @@ function onImportSuccess(updated: VaultItem[]) {
         v-else-if="viewMode === 'table'"
         class="flex-1 min-w-0 min-h-0 overflow-auto"
       >
-        <table class="w-full min-w-[1100px] text-xs text-left border-collapse">
+        <table class="w-full min-w-[1280px] text-xs text-left border-collapse">
           <thead class="sticky top-0 bg-muted/90 backdrop-blur-xs z-10 border-b border-border text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
             <tr>
               <th class="py-2.5 px-3 w-10 text-center">
@@ -505,9 +567,10 @@ function onImportSuccess(updated: VaultItem[]) {
               </th>
               <th class="py-2.5 px-3">Employee's Name</th>
               <th class="py-2.5 px-3">ID No.</th>
-              <th class="py-2.5 px-3">Department</th>
-              <th class="py-2.5 px-3">Position</th>
+              <th class="py-2.5 px-3">Department & Role</th>
+              <th class="py-2.5 px-3">Competency</th>
               <th class="py-2.5 px-3">Contract & Status</th>
+              <th class="py-2.5 px-3">Start Date & Tenure</th>
               <th class="py-2.5 px-3">Contact No.</th>
               <th class="py-2.5 px-3">Government IDs (SSS / TIN / HDMF)</th>
               <th class="py-2.5 px-3 text-right">Actions</th>
@@ -545,25 +608,30 @@ function onImportSuccess(updated: VaultItem[]) {
               </td>
 
               <!-- DMBB ID -->
-              <td class="py-2.5 px-3 font-mono font-medium w-30">
+              <td class="py-2.5 px-3 font-mono font-medium w-28">
                 <span v-if="emp.dmbb_id || emp.employee_id" class="px-1.5 text-[10px] py-0.5 rounded bg-muted/60 text-muted-foreground hover:text-foreground cursor-pointer border border-border">
                   {{ emp.dmbb_id || emp.employee_id }}
                 </span>
                 <span v-else class="text-muted-foreground/40 italic">—</span>
               </td>
 
-              <!-- Department -->
+              <!-- Department & Position -->
               <td class="py-2.5 px-3">
-                <span v-if="emp.department" class="font-medium text-foreground">
-                  {{ emp.department }}
-                </span>
-                <span v-else class="text-muted-foreground/40 italic">—</span>
+                <div class="font-medium text-foreground">
+                  {{ emp.department || '—' }}
+                </div>
+                <div v-if="emp.position" class="text-[10px] text-muted-foreground">
+                  {{ emp.position }}
+                </div>
               </td>
 
-              <!-- Position -->
+              <!-- Competency (For LBT) -->
               <td class="py-2.5 px-3">
-                <span v-if="emp.position" class="text-muted-foreground font-medium">
-                  {{ emp.position }}
+                <span
+                  v-if="emp.competency"
+                  class="px-2 py-0.5 rounded text-[10px] font-semibold bg-purple-500/10 text-purple-600 border border-purple-500/20 inline-block"
+                >
+                  {{ emp.competency }}
                 </span>
                 <span v-else class="text-muted-foreground/40 italic">—</span>
               </td>
@@ -587,6 +655,18 @@ function onImportSuccess(updated: VaultItem[]) {
                   >
                     {{ emp.contract }}
                   </span>
+                </div>
+              </td>
+
+              <!-- Start Date & Calculated Tenure -->
+              <td class="py-2.5 px-3">
+                <div v-if="emp.start_date" class="text-foreground font-medium flex items-center gap-1">
+                  <Calendar class="w-3 h-3 text-muted-foreground" />
+                  <span>{{ formatDate(emp.start_date) }}</span>
+                </div>
+                <div class="text-[10px] text-primary font-semibold flex items-center gap-1 mt-0.5">
+                  <Clock class="w-2.5 h-2.5 text-primary/70" />
+                  <span>{{ getEmployeeTenureDisplay(emp.start_date, emp.end_date, emp.status) }}</span>
                 </div>
               </td>
 
@@ -660,6 +740,14 @@ function onImportSuccess(updated: VaultItem[]) {
                   </button>
 
                   <button
+                    @click="handlePrintDossier(emp)"
+                    class="p-1.5 text-muted-foreground hover:text-blue-600 rounded hover:bg-blue-500/10"
+                    title="Print Employee Dossier"
+                  >
+                    <Printer class="w-3.5 h-3.5" />
+                  </button>
+
+                  <button
                     @click="emit('edit-employee', emp)"
                     class="p-1.5 text-muted-foreground hover:text-foreground rounded hover:bg-muted"
                     title="Edit Employee"
@@ -722,7 +810,7 @@ function onImportSuccess(updated: VaultItem[]) {
                   </div>
                 </div>
 
-                <!-- Contract / Status -->
+                <!-- Contract / Status / Competency -->
                 <div class="flex items-center gap-1.5 flex-wrap">
                   <span
                     class="px-2 py-0.5 rounded-md text-[10px] font-bold"
@@ -739,6 +827,24 @@ function onImportSuccess(updated: VaultItem[]) {
                     class="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-blue-500/10 text-blue-600 border border-blue-500/20"
                   >
                     {{ emp.contract }}
+                  </span>
+                  <span
+                    v-if="emp.competency"
+                    class="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-purple-500/10 text-purple-600 border border-purple-500/20"
+                  >
+                    {{ emp.competency }}
+                  </span>
+                </div>
+
+                <!-- Timeline / Tenure banner -->
+                <div class="p-2 rounded-xl bg-muted/40 border border-border text-[11px] flex items-center justify-between">
+                  <span class="text-muted-foreground flex items-center gap-1">
+                    <Calendar class="w-3 h-3" />
+                    {{ emp.start_date ? formatDate(emp.start_date) : 'Start date unassigned' }}
+                  </span>
+                  <span class="font-bold text-primary flex items-center gap-1">
+                    <Clock class="w-3 h-3" />
+                    {{ getEmployeeTenureDisplay(emp.start_date, emp.end_date, emp.status) }}
                   </span>
                 </div>
               </div>
@@ -775,6 +881,13 @@ function onImportSuccess(updated: VaultItem[]) {
                 <span v-else class="text-muted-foreground/40 italic text-[11px]">No contact no.</span>
 
                 <div class="flex items-center gap-1">
+                  <button
+                    @click="handlePrintDossier(emp)"
+                    class="p-1 text-muted-foreground hover:text-blue-600 rounded hover:bg-blue-500/10"
+                    title="Print Dossier"
+                  >
+                    <Printer class="w-3.5 h-3.5" />
+                  </button>
                   <button
                     @click="emit('edit-employee', emp)"
                     class="p-1 text-muted-foreground hover:text-foreground rounded hover:bg-muted"

@@ -8,6 +8,7 @@ import PasswordGeneratorModal from './PasswordGeneratorModal.vue'
 import CredentialTypeIcon from './CredentialTypeIcon.vue'
 import PhoneInput from '@/components/common/PhoneInput.vue'
 import AddressInput from '@/components/common/AddressInput.vue'
+import { calculateTenure, getEmployeeTenureDisplay } from '@/lib/dateUtils'
 import {
   Building2,
   Eye,
@@ -19,6 +20,14 @@ import {
   Lock,
   ChevronDown,
   Check,
+  Calendar,
+  Clock,
+  Briefcase,
+  User,
+  Shield,
+  Phone,
+  MapPin,
+  Award,
 } from '@lucide/vue'
 
 const props = defineProps<{
@@ -299,8 +308,11 @@ const defaultFormData = () => ({
   full_name: '',
   position: '',
   department: '',
+  competency: '',
   contract: 'Regular',
   status: 'Active',
+  start_date: '',
+  end_date: '',
   sss_no: '',
   hdmf_no: '',
   phic_no: '',
@@ -313,10 +325,17 @@ const defaultFormData = () => ({
   contact_no: '',
   work_phone: '',
   emergency_contact: '',
+  emergency_contact_address: '',
+  emergency_contact_no: '',
   work_email: '',
 })
 
 const form = reactive(defaultFormData())
+
+const employeeTenurePreview = computed(() => {
+  if (form.type !== 'identity' || !form.start_date) return null
+  return calculateTenure(form.start_date, form.end_date, form.status)
+})
 
 watch(
   () => props.open,
@@ -1400,15 +1419,17 @@ function close() {
         </div>
 
         <!-- ================= 12. EMPLOYEE IDENTITY PROFILE ================= -->
-        <div v-else-if="form.type === 'identity'" class="space-y-5">
-          <!-- 1. Personal & Employment Basics -->
-          <div class="space-y-3">
-            <h4 class="text-xs font-bold text-foreground uppercase tracking-wider flex items-center gap-1.5">
-              <span>Employee Information</span>
-            </h4>
+        <div v-else-if="form.type === 'identity'" class="space-y-6">
+          <!-- 1. Personal Information Section -->
+          <div class="space-y-3.5">
+            <div class="flex items-center gap-2 pb-1 border-b border-border/60">
+              <User class="w-4 h-4 text-primary" />
+              <h4 class="text-xs font-bold text-foreground uppercase tracking-wider">1. Personal Information</h4>
+            </div>
+
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div class="space-y-1.5">
-                <label class="text-xs font-semibold text-foreground">Employee's Name *</label>
+                <label class="text-xs font-semibold text-foreground">Employee's Full Name *</label>
                 <input
                   v-model="form.full_name"
                   type="text"
@@ -1417,8 +1438,34 @@ function close() {
                   class="w-full px-3.5 py-2 text-sm rounded-xl border border-input bg-card/60 hover:bg-card focus:bg-card focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary placeholder:text-muted-foreground"
                 />
               </div>
+
               <div class="space-y-1.5">
-                <label class="text-xs font-semibold text-foreground">DMBB/DBB ID No.</label>
+                <label class="text-xs font-semibold text-foreground">Birthdate</label>
+                <input
+                  v-model="form.birthdate"
+                  type="text"
+                  placeholder="e.g. July 9, 2000 or YYYY-MM-DD"
+                  class="w-full px-3.5 py-2 text-sm rounded-xl border border-input bg-card/60 hover:bg-card focus:bg-card focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary placeholder:text-muted-foreground"
+                />
+              </div>
+            </div>
+
+            <AddressInput
+              v-model="form.address"
+              label="Permanent / Home Address"
+            />
+          </div>
+
+          <!-- 2. Employment Details Section -->
+          <div class="space-y-3.5 pt-2 border-t border-border">
+            <div class="flex items-center gap-2 pb-1 border-b border-border/60">
+              <Briefcase class="w-4 h-4 text-primary" />
+              <h4 class="text-xs font-bold text-foreground uppercase tracking-wider">2. Employment & Competency</h4>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div class="space-y-1.5">
+                <label class="text-xs font-semibold text-foreground">DMBB / DBB ID No.</label>
                 <input
                   v-model="form.dmbb_id"
                   type="text"
@@ -1426,29 +1473,44 @@ function close() {
                   class="w-full px-3.5 py-2 text-sm font-mono rounded-xl border border-input bg-card/60 hover:bg-card focus:bg-card focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary placeholder:text-muted-foreground"
                 />
               </div>
-            </div>
 
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div class="space-y-1.5">
                 <label class="text-xs font-semibold text-foreground">Department</label>
                 <input
                   v-model="form.department"
                   type="text"
-                  placeholder="e.g. Warehouse, IT, HR, Lineman"
+                  placeholder="e.g. IT, Warehouse, Lineman, HR"
                   class="w-full px-3.5 py-2 text-sm rounded-xl border border-input bg-card/60 hover:bg-card focus:bg-card focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary placeholder:text-muted-foreground"
                 />
               </div>
+
               <div class="space-y-1.5">
-                <label class="text-xs font-semibold text-foreground">Position</label>
+                <label class="text-xs font-semibold text-foreground">Position / Title</label>
                 <input
                   v-model="form.position"
                   type="text"
-                  placeholder="e.g. Expediter, Specialist"
+                  placeholder="e.g. Expediter, Specialist, Manager"
                   class="w-full px-3.5 py-2 text-sm rounded-xl border border-input bg-card/60 hover:bg-card focus:bg-card focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary placeholder:text-muted-foreground"
                 />
               </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div class="space-y-1.5">
-                <label class="text-xs font-semibold text-foreground">Contract</label>
+                <label class="text-xs font-semibold text-foreground flex items-center gap-1">
+                  <Award class="w-3.5 h-3.5 text-amber-500" />
+                  <span>Competency (For LBT)</span>
+                </label>
+                <input
+                  v-model="form.competency"
+                  type="text"
+                  placeholder="e.g. Certified, Level 2, Technical"
+                  class="w-full px-3.5 py-2 text-sm rounded-xl border border-input bg-card/60 hover:bg-card focus:bg-card focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary placeholder:text-muted-foreground"
+                />
+              </div>
+
+              <div class="space-y-1.5">
+                <label class="text-xs font-semibold text-foreground">Contract Type</label>
                 <select
                   v-model="form.contract"
                   class="w-full px-3.5 py-2 text-sm rounded-xl border border-input bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
@@ -1462,11 +1524,9 @@ function close() {
                   <option value="Consultant">Consultant</option>
                 </select>
               </div>
-            </div>
 
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div class="space-y-1.5">
-                <label class="text-xs font-semibold text-foreground">Status</label>
+                <label class="text-xs font-semibold text-foreground">Employment Status</label>
                 <select
                   v-model="form.status"
                   class="w-full px-3.5 py-2 text-sm rounded-xl border border-input bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
@@ -1478,67 +1538,126 @@ function close() {
                   <option value="Terminated">Terminated</option>
                 </select>
               </div>
+            </div>
+
+            <!-- Start Date, End Date, and Live Calculated Tenure Display -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div class="space-y-1.5">
-                <label class="text-xs font-semibold text-foreground">Birthdate</label>
+                <label class="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                  <Calendar class="w-3.5 h-3.5 text-primary" />
+                  <span>Start Date</span>
+                </label>
                 <input
-                  v-model="form.birthdate"
+                  v-model="form.start_date"
                   type="text"
-                  placeholder="e.g. July 9, 2000 or YYYY-MM-DD"
+                  placeholder="e.g. January 15, 2021 or 2021-01-15"
+                  class="w-full px-3.5 py-2 text-sm rounded-xl border border-input bg-card/60 hover:bg-card focus:bg-card focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary placeholder:text-muted-foreground"
+                />
+              </div>
+
+              <div class="space-y-1.5">
+                <label class="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                  <Calendar class="w-3.5 h-3.5 text-muted-foreground" />
+                  <span>End Date (Optional)</span>
+                </label>
+                <input
+                  v-model="form.end_date"
+                  type="text"
+                  placeholder="e.g. Present, or YYYY-MM-DD if departed"
                   class="w-full px-3.5 py-2 text-sm rounded-xl border border-input bg-card/60 hover:bg-card focus:bg-card focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary placeholder:text-muted-foreground"
                 />
               </div>
             </div>
+
+            <!-- Read-only Calculated Tenure Card -->
+            <div class="p-3.5 rounded-xl border border-border/80 bg-muted/20 flex items-center justify-between gap-3">
+              <div class="flex items-center gap-2.5 min-w-0">
+                <div class="p-2 rounded-lg bg-primary/10 text-primary shrink-0">
+                  <Clock class="w-4 h-4" />
+                </div>
+                <div class="min-w-0">
+                  <span class="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider block">Calculated Tenure (Read-Only)</span>
+                  <div v-if="employeeTenurePreview" class="text-sm font-bold text-foreground truncate">
+                    <span>{{ employeeTenurePreview.formatted }}</span>
+                    <span class="text-xs font-normal text-muted-foreground ml-2">
+                      ({{ employeeTenurePreview.startFormatted }} &rarr; {{ employeeTenurePreview.endFormatted }})
+                    </span>
+                  </div>
+                  <div v-else class="text-xs text-muted-foreground italic">
+                    Enter a Start Date above to automatically compute employment tenure.
+                  </div>
+                </div>
+              </div>
+
+              <span
+                v-if="employeeTenurePreview"
+                class="px-2.5 py-1 rounded-lg text-xs font-bold bg-primary/10 text-primary border border-primary/20 shrink-0"
+              >
+                {{ employeeTenurePreview.shortFormatted }}
+              </span>
+            </div>
           </div>
 
-          <!-- 2. Philippine Government IDs -->
-          <div class="pt-3 border-t border-border space-y-3">
-            <div class="flex items-center justify-between">
-              <h4 class="text-xs font-bold text-foreground uppercase tracking-wider">Philippine Government IDs</h4>
-              <span class="text-[10px] text-muted-foreground">Optional fields</span>
+          <!-- 3. Philippine Government IDs Section -->
+          <div class="space-y-3.5 pt-2 border-t border-border">
+            <div class="flex items-center justify-between pb-1 border-b border-border/60">
+              <div class="flex items-center gap-2">
+                <Shield class="w-4 h-4 text-primary" />
+                <h4 class="text-xs font-bold text-foreground uppercase tracking-wider">3. Philippine Government IDs</h4>
+              </div>
+              <span class="text-[10px] text-muted-foreground">Standard PH formats</span>
             </div>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <div class="space-y-1.5">
                 <label class="text-xs font-semibold text-foreground">SSS No.</label>
                 <input
                   v-model="form.sss_no"
                   type="text"
-                  placeholder=""
+                  placeholder="e.g. 00-0000000-0"
                   class="w-full px-3.5 py-2 text-sm font-mono rounded-xl border border-input bg-card/60 hover:bg-card focus:bg-card focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary placeholder:text-muted-foreground"
                 />
               </div>
+
               <div class="space-y-1.5">
                 <label class="text-xs font-semibold text-foreground">HDMF / Pag-IBIG No.</label>
                 <input
                   v-model="form.hdmf_no"
                   type="text"
-                  placeholder=""
+                  placeholder="e.g. 0000-0000-0000"
                   class="w-full px-3.5 py-2 text-sm font-mono rounded-xl border border-input bg-card/60 hover:bg-card focus:bg-card focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary placeholder:text-muted-foreground"
                 />
               </div>
+
               <div class="space-y-1.5">
                 <label class="text-xs font-semibold text-foreground">PHIC / PhilHealth No.</label>
                 <input
                   v-model="form.phic_no"
                   type="text"
-                  placeholder=""
+                  placeholder="e.g. 00-000000000-0"
                   class="w-full px-3.5 py-2 text-sm font-mono rounded-xl border border-input bg-card/60 hover:bg-card focus:bg-card focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary placeholder:text-muted-foreground"
                 />
               </div>
+
               <div class="space-y-1.5">
                 <label class="text-xs font-semibold text-foreground">TIN No.</label>
                 <input
                   v-model="form.tin_no"
                   type="text"
-                  placeholder=""
+                  placeholder="e.g. 000-000-000-000"
                   class="w-full px-3.5 py-2 text-sm font-mono rounded-xl border border-input bg-card/60 hover:bg-card focus:bg-card focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary placeholder:text-muted-foreground"
                 />
               </div>
             </div>
           </div>
 
-          <!-- 3. Contact Details & Emergency -->
-          <div class="pt-3 border-t border-border space-y-3">
-            <h4 class="text-xs font-bold text-foreground uppercase tracking-wider">Contact & Emergency</h4>
+          <!-- 4. Contact & Emergency Information Section -->
+          <div class="space-y-3.5 pt-2 border-t border-border">
+            <div class="flex items-center gap-2 pb-1 border-b border-border/60">
+              <Phone class="w-4 h-4 text-primary" />
+              <h4 class="text-xs font-bold text-foreground uppercase tracking-wider">4. Contact & Emergency (ICE)</h4>
+            </div>
+
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <PhoneInput
                 v-model="form.contact_no"
@@ -1558,17 +1677,43 @@ function close() {
             </div>
 
             <AddressInput
-              v-model="form.address"
-              label="Address"
+              v-model="form.office_address"
+              label="Office / Workstation Address"
+              placeholder="e.g. Head Office 4th Flr / Branch Warehouse"
             />
 
-            <div class="space-y-1.5">
-              <label class="text-xs font-semibold text-foreground">In Case of Emergency (ICE)</label>
-              <input
-                v-model="form.emergency_contact"
-                type="text"
-                placeholder="e.g. Kathryn Bernardo (Wife) - 0918-0000-1234"
-                class="w-full px-3.5 py-2 text-sm rounded-xl border border-input bg-card/60 hover:bg-card focus:bg-card focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary placeholder:text-muted-foreground"
+            <!-- In Case of Emergency (ICE) sub-block -->
+            <div class="p-4 rounded-xl border border-amber-500/30 bg-amber-500/5 space-y-3">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
+                  <span>In Case of Emergency (ICE)</span>
+                </span>
+                <span class="text-[10px] text-muted-foreground">Emergency Contact Details</span>
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div class="space-y-1.5">
+                  <label class="text-xs font-semibold text-foreground">Emergency Contact Person / Name</label>
+                  <input
+                    v-model="form.emergency_contact"
+                    type="text"
+                    placeholder="e.g. Kathryn Bernardo (Spouse)"
+                    class="w-full px-3.5 py-2 text-sm rounded-xl border border-input bg-card hover:bg-card focus:bg-card focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary placeholder:text-muted-foreground"
+                  />
+                </div>
+
+                <PhoneInput
+                  v-model="form.emergency_contact_no"
+                  label="Emergency Contact No."
+                  placeholder="0918 000 1234"
+                  helper="ICE contact phone number"
+                />
+              </div>
+
+              <AddressInput
+                v-model="form.emergency_contact_address"
+                label="Emergency Contact Address"
+                placeholder="e.g. 123 Sampaguita St, Quezon City"
               />
             </div>
           </div>

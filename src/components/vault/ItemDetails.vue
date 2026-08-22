@@ -5,7 +5,8 @@ import { useVault } from '@/composables/useVault'
 import { useClipboard } from '@/composables/useClipboard'
 import { useToast } from '@/composables/useToast'
 import { calculatePasswordStrength } from '@/services/crypto'
-import { formatDate, formatDateTime, formatPhilippinePhone } from '@/lib/dateUtils'
+import { formatDate, formatDateTime, formatPhilippinePhone, getEmployeeTenureDisplay } from '@/lib/dateUtils'
+import { usePrint } from '@/composables/usePrint'
 import CredentialTypeIcon from './CredentialTypeIcon.vue'
 import ConfirmDeleteDialog from '@/components/ui/ConfirmDeleteDialog.vue'
 import {
@@ -29,6 +30,12 @@ import {
   KeyRound,
   AlertTriangle,
   Phone,
+  Award,
+  Briefcase,
+  User,
+  Shield,
+  MapPin,
+  Printer,
 } from '@lucide/vue'
 
 const props = defineProps<{
@@ -43,10 +50,20 @@ const emit = defineEmits<{
 const { toggleFavorite, moveToTrash } = useVault()
 const { copyToClipboard } = useClipboard()
 const { success } = useToast()
+const { printEmployeeDossier, printGenericVaultItem } = usePrint()
 
 const showPassword = ref(false)
 const copiedField = ref<string | null>(null)
 const showDeleteConfirm = ref(false)
+
+function handlePrint() {
+  if (!props.item) return
+  if (props.item.type === 'identity') {
+    printEmployeeDossier(props.item)
+  } else {
+    printGenericVaultItem(props.item)
+  }
+}
 
 watch(
   () => props.item?.id,
@@ -725,7 +742,7 @@ function handleTrash() {
               </p>
             </div>
 
-            <div class="flex items-center gap-2 flex-wrap justify-end">
+            <div class="flex items-center gap-1.5 flex-wrap justify-end">
               <span
                 v-if="item.dmbb_id || item.employee_id"
                 class="px-2.5 py-1 rounded-lg text-xs font-mono font-bold bg-primary/10 text-primary border border-primary/20"
@@ -748,13 +765,62 @@ function handleTrash() {
               >
                 {{ item.contract }}
               </span>
+              <span
+                v-if="item.competency"
+                class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 flex items-center gap-1"
+              >
+                <Award class="w-3 h-3" />
+                <span>{{ item.competency }}</span>
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Employment & Tenure Summary -->
+        <div class="p-4 rounded-xl border border-border bg-card/60 space-y-3">
+          <div class="flex items-center justify-between pb-1 border-b border-border/60">
+            <h4 class="text-xs font-bold text-foreground uppercase tracking-wider flex items-center gap-1.5">
+              <Clock class="w-3.5 h-3.5 text-primary" />
+              <span>Employment Timeline & Tenure</span>
+            </h4>
+            <span
+              v-if="item.start_date"
+              class="px-2 py-0.5 rounded text-[10px] font-bold bg-primary/10 text-primary"
+            >
+              {{ getEmployeeTenureDisplay(item.start_date, item.end_date, item.status, true) }}
+            </span>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div class="p-3 rounded-lg border border-border/80 bg-background/50">
+              <span class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block">Start Date</span>
+              <span class="text-xs font-bold text-foreground block mt-0.5">
+                {{ item.start_date ? formatDate(item.start_date) : '—' }}
+              </span>
+            </div>
+
+            <div class="p-3 rounded-lg border border-border/80 bg-background/50">
+              <span class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block">End Date</span>
+              <span class="text-xs font-bold text-foreground block mt-0.5">
+                {{ item.end_date ? formatDate(item.end_date) : ((item.status || '').toLowerCase() === 'active' ? 'Present (Active)' : '—') }}
+              </span>
+            </div>
+
+            <div class="p-3 rounded-lg border border-border/80 bg-background/50">
+              <span class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block">Calculated Tenure</span>
+              <span class="text-xs font-bold text-foreground block mt-0.5">
+                {{ getEmployeeTenureDisplay(item.start_date, item.end_date, item.status) }}
+              </span>
             </div>
           </div>
         </div>
 
         <!-- Philippine Government Numbers -->
         <div class="p-4 rounded-xl border border-border bg-card/60 space-y-3">
-          <h4 class="text-xs font-bold text-foreground uppercase tracking-wider">Philippine Government Identification</h4>
+          <h4 class="text-xs font-bold text-foreground uppercase tracking-wider flex items-center gap-1.5">
+            <Shield class="w-3.5 h-3.5 text-primary" />
+            <span>Philippine Government Identification</span>
+          </h4>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div class="p-3 rounded-lg border border-border/80 bg-background/50 flex items-center justify-between">
               <div>
@@ -822,7 +888,7 @@ function handleTrash() {
           </div>
         </div>
 
-        <!-- Contact & Emergency & Personal Details -->
+        <!-- Contact & Location Details -->
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div v-if="item.contact_no || item.work_phone || item.phone" class="p-3.5 rounded-xl border border-border bg-card/60">
             <span class="text-[11px] font-medium text-muted-foreground block">Contact Number</span>
@@ -852,15 +918,49 @@ function handleTrash() {
             </div>
           </div>
 
-          <div v-if="item.emergency_contact" class="p-3.5 rounded-xl border border-border bg-card/60">
-            <span class="text-[11px] font-medium text-muted-foreground block">In Case of Emergency (ICE)</span>
-            <span class="text-sm font-semibold text-foreground block mt-1">{{ item.emergency_contact }}</span>
+          <div v-if="item.office_address" class="p-3.5 rounded-xl border border-border bg-card/60">
+            <span class="text-[11px] font-medium text-muted-foreground block">Office / Station Address</span>
+            <span class="text-sm text-foreground block mt-1">{{ item.office_address }}</span>
           </div>
         </div>
 
-        <div v-if="item.address || item.office_address" class="p-3.5 rounded-xl border border-border bg-card/60">
-          <span class="text-[11px] font-medium text-muted-foreground block">Address</span>
-          <span class="text-sm text-foreground block mt-0.5">{{ item.address || item.office_address }}</span>
+        <!-- Permanent / Home Address -->
+        <div v-if="item.address" class="p-3.5 rounded-xl border border-border bg-card/60">
+          <span class="text-[11px] font-medium text-muted-foreground block">Permanent / Home Address</span>
+          <span class="text-sm text-foreground block mt-0.5">{{ item.address }}</span>
+        </div>
+
+        <!-- Emergency Contact Section (ICE) -->
+        <div
+          v-if="item.emergency_contact || item.emergency_contact_no || item.emergency_contact_address"
+          class="p-4 rounded-xl border border-amber-500/30 bg-amber-500/5 space-y-3"
+        >
+          <div class="flex items-center justify-between pb-1 border-b border-amber-500/20">
+            <span class="text-xs font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
+              <Phone class="w-3.5 h-3.5" />
+              <span>In Case of Emergency (ICE)</span>
+            </span>
+            <span class="text-[10px] text-muted-foreground">Emergency Contact Details</span>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div v-if="item.emergency_contact">
+              <span class="text-[11px] font-medium text-muted-foreground block">Contact Person</span>
+              <span class="text-sm font-semibold text-foreground block mt-0.5">{{ item.emergency_contact }}</span>
+            </div>
+
+            <div v-if="item.emergency_contact_no">
+              <span class="text-[11px] font-medium text-muted-foreground block">Emergency Contact Number</span>
+              <a :href="`tel:${item.emergency_contact_no}`" class="text-sm font-semibold text-primary hover:underline block mt-0.5">
+                {{ formatPhilippinePhone(item.emergency_contact_no) }}
+              </a>
+            </div>
+          </div>
+
+          <div v-if="item.emergency_contact_address" class="pt-1">
+            <span class="text-[11px] font-medium text-muted-foreground block">Emergency Contact Address</span>
+            <span class="text-xs text-foreground block mt-0.5">{{ item.emergency_contact_address }}</span>
+          </div>
         </div>
       </div>
 
